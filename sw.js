@@ -1,9 +1,9 @@
-const CACHE_NAME = 'dsr-cache-v3';
+const CACHE_NAME = 'dsr-cache-v4';
 const urlsToCache = [
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
+  './app-icon-192.png',
+  './app-icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js'
