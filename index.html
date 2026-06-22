@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DSR App</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DSR App">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#000000;--navy-dark:#111111;--navy-light:#f3f4f6;
+  --accent:#222222;--bg:#f9fafb;--surface:#ffffff;--border:#e5e7eb;
+  --text:#111827;--muted:#6b7280;--danger:#b91c1c;--success:#166534;
+  --sbg:#dcfce7;--dbg:#fee2e2;--r:10px;--rs:6px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+.screen{display:none}.screen.active{display:block}
+
+/* HOME */
+.home-topbar{background:var(--navy);padding:20px 16px 16px;color:#fff}
+.home-topbar-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo-box{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.home-topbar h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.home-topbar p{font-size:12px;opacity:.6;margin-top:2px}
+.home-body{padding:12px 12px 80px}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 0 8px}
+.sec-lbl:first-child{margin-top:4px}
+
+/* PROJECT CARDS */
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative}
+.proj-card:hover{border-color:#b0bfcf;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.proj-card-top{display:flex;align-items:flex-start;gap:10px}
+.proj-avatar{width:38px;height:38px;border-radius:8px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--navy);flex-shrink:0}
+.proj-card-info{flex:1;min-width:0}
+.proj-card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-card-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-card-meta{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.mpill{font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;background:var(--navy-light);color:var(--navy)}
+.mpill.green{background:var(--sbg);color:var(--success)}
+.proj-del-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;cursor:pointer;padding:5px;border-radius:6px;color:var(--muted);font-size:16px;line-height:1}
+.proj-del-btn:hover{color:var(--danger);background:var(--dbg)}
+.fab{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.fab:hover{background:var(--navy-dark)}
+.fab-accent{background:var(--accent)}
+.fab-accent:hover{background:#b07c20}
+.empty-state{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px}
+.empty-state div{font-size:36px;margin-bottom:8px}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal-backdrop.hidden{display:none}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 16px 36px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--navy)}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.btn-mp{flex:1;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
+.btn-mc{flex:1;padding:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
+
+/* DSR HISTORY LIST */
+.dsr-item{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.dsr-item-inner{flex:1;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:var(--rs);cursor:pointer}
+.dsr-item-inner:hover{background:var(--navy-light)}
+.dsr-date{font-size:13px;font-weight:600;color:var(--text)}
+.dsr-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.dsr-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:var(--navy-light);color:var(--navy);white-space:nowrap}
+.dsr-del{background:transparent;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:4px 6px;flex-shrink:0}
+.dsr-del:hover{color:var(--danger)}
+
+/* DSR FORM SCREEN */
+.topbar{background:var(--navy);color:#fff;padding:12px 16px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.topbar-info{flex:1;min-width:0}
+.topbar-info h1{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-info p{font-size:10px;opacity:.65;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-date{font-size:11px;font-weight:500;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
+.back-btn{background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;padding:2px 6px 2px 0;line-height:1;flex-shrink:0}
+.prog-bar-wrap{background:var(--navy-dark);padding:8px 16px;display:flex;gap:3px}
+.prog-seg{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2);transition:background .3s}
+.prog-seg.done{background:var(--accent)}
+.prog-seg.active{background:rgba(255,255,255,.7)}
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:11px 13px;font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;user-select:none}
+.nav-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.section{display:none;padding:12px 12px 90px}
+.section.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+input[type="text"],input[type="email"],input[type="number"],input[type="date"],select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,58,92,.1)}
+textarea{resize:vertical;min-height:64px;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.table-scroll{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
+table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
+table.dt th{background:var(--navy-light);color:var(--navy);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;border:1px solid var(--border);white-space:nowrap;text-align:left}
+table.dt td{padding:4px 5px;border:1px solid var(--border);vertical-align:middle}
+table.dt td input,table.dt td select{border:none;background:transparent;padding:4px 5px;font-size:12px;width:100%;min-width:70px;outline:none}
+table.dt td input:focus,table.dt td select:focus{background:var(--navy-light);border-radius:3px}
+table.dt tr:nth-child(even) td{background:#fafbfc}
+.add-row-btn{margin-top:8px;width:100%;padding:8px;font-size:12px;font-weight:500;border:1.5px dashed var(--border);border-radius:var(--rs);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.add-row-btn:hover{background:var(--navy-light);color:var(--navy);border-color:var(--navy)}
+.del-btn{background:transparent;border:none;cursor:pointer;color:#ccc;padding:4px 6px;font-size:16px;line-height:1;transition:color .1s}
+.del-btn:hover{color:var(--danger)}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.photo-item{display:flex;flex-direction:column;gap:5px}
+.photo-slot{aspect-ratio:4/3;border:1.5px dashed var(--border);border-radius:var(--rs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:#fafbfc;position:relative;overflow:hidden}
+.photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+.ps-lbl{font-size:10px;color:var(--muted);font-weight:500}
+.ps-icon{font-size:22px;color:#c5cdd8}
+.photo-caption{font-size:11px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 7px;width:100%}
+.email-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.email-tag{display:inline-flex;align-items:center;gap:5px;background:var(--navy-light);border:1px solid #c3d3e8;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--navy)}
+.email-tag button{background:none;border:none;cursor:pointer;color:#8faac5;font-size:14px;padding:0;line-height:1}
+.email-tag button:hover{color:var(--danger)}
+.email-input-row{display:flex;gap:7px}
+.email-input-row input{flex:1}
+.email-add-btn{padding:9px 13px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.preview-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.preview-row:last-child{border-bottom:none}
+.preview-val{font-weight:600;color:var(--navy)}
+.export-btn{width:100%;padding:13px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;transition:opacity .15s,transform .1s}
+.export-btn:active{transform:scale(.98);opacity:.9}
+.btn-excel{background:#1a6b3c;color:#fff}
+.btn-pdf{background:#991b1b;color:#fff}
+.btn-email{background:var(--navy);color:#fff}
+.btn-save{background:var(--accent);color:#fff}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:8px;z-index:150;max-width:600px;margin:0 auto}
+.btn-prev,.btn-next{flex:1;padding:12px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:none;transition:background .15s}
+.btn-prev{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.btn-next{background:var(--navy);color:#fff}
+.btn-next:hover{background:var(--navy-dark)}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.carryover-banner{background:linear-gradient(135deg,#e8eff7,#f0f5fb);border:1px solid #c3d3e8;border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:8px}
+.carryover-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.carryover-text{font-size:12px;color:var(--navy);line-height:1.5}
+.carryover-text strong{font-weight:700}
+@media(min-width:600px){.app-wrap{max-width:600px;margin:0 auto}.bottom-bar{max-width:600px;left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="app-wrap">
+
+<!-- ===== MODAL: SETUP ===== -->
+<div class="modal-backdrop hidden" id="modal-setup" style="z-index:900;">
+  <div class="modal">
+    <div class="modal-title">Welcome to DSR</div>
+    <label>Please enter your Company Name to continue:</label>
+    <input type="text" id="setup-company" placeholder="e.g. Acme Corp">
+    <div class="modal-actions">
+      <button class="btn-mp" onclick="saveSetup()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: HOME ===== -->
+<div class="screen active" id="screen-home">
+  <div class="home-topbar">
+    <div class="home-topbar-row">
+      <div class="logo-box">DSR</div>
+      <div><h1>Daily Site Reports</h1><p id="home-company-name" onclick="editCompany()" style="cursor:pointer; text-decoration:underline dashed; opacity:0.8;">Company Name</p></div>
+    </div>
+  </div>
+  <div class="home-body">
+    <div class="sec-lbl">Your Projects</div>
+    <div id="proj-list"></div>
+    <button class="fab" style="margin-top:10px" onclick="openNewProjectModal()">+ New Project</button>
+    <div id="quick-dsr-wrap" style="display:none">
+      <div class="sec-lbl">Quick actions</div>
+      <button class="fab fab-accent" onclick="openQuickDSR()">✏️ &nbsp;New DSR for last project</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: DSR FORM ===== -->
+<div class="screen" id="screen-dsr">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()" aria-label="Back">&#8592;</button>
+    <div class="topbar-info">
+      <h1 id="dsr-topbar-title">Daily Site Report</h1>
+      <p id="dsr-topbar-sub"></p>
+    </div>
+    <div class="topbar-date" id="today-badge"></div>
+  </div>
+  <div class="prog-bar-wrap" id="prog-bar"></div>
+  <div class="nav-tabs" id="nav-tabs">
+    <div class="nav-tab active" data-i="0">Header</div>
+    <div class="nav-tab" data-i="1">Summary</div>
+    <div class="nav-tab" data-i="2">Manpower</div>
+    <div class="nav-tab" data-i="3">Progress</div>
+    <div class="nav-tab" data-i="4">Materials</div>
+    <div class="nav-tab" data-i="5">Issues</div>
+    <div class="nav-tab" data-i="6">Tomorrow</div>
+    <div class="nav-tab" data-i="7">Photos</div>
+    <div class="nav-tab" data-i="8">Export</div>
+  </div>
+
+  <!-- S0 Header -->
+  <div class="section active" id="s0">
+    <div id="carryover-wrap"></div>
+    <div class="card">
+      <div class="card-title">Project info</div>
+      <label>Project name / ID</label><input type="text" id="proj_name" placeholder="e.g. ALP-RRJ143-VND139-B8-PM-DR-000001">
+      <label>Location / Zone</label><input type="text" id="proj_loc" placeholder="e.g. Palm Jumeirah Frond D">
+      <div class="row2">
+        <div><label>Date</label><input type="date" id="proj_date"></div>
+        <div><label>Shift</label><select id="proj_shift"><option>Day</option><option>Night</option></select></div>
+      </div>
+      <div class="row2">
+        <div><label>Weather</label><select id="weather"><option>Hot</option><option>Clear</option><option>Windy</option><option>Rainy</option><option>Cloudy</option><option>Humid</option><option>Dusty</option></select></div>
+        <div><label>Working hours</label><input type="text" id="hours" placeholder="08:00 - 17:00"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Parties</div>
+      <label>Client</label><input type="text" id="client" placeholder="Client full name">
+      <label>Consultant / Designer</label><input type="text" id="consultant" placeholder="Consultant name">
+      <label>Main Contractor</label><input type="text" id="contractor" placeholder="Main contractor">
+    </div>
+    <div class="card">
+      <div class="card-title">Signatories &amp; distribution</div>
+      <label>Prepared by</label><input type="text" id="prepared_by" placeholder="Name / Job title">
+      <label>Reviewed by</label><input type="text" id="reviewed_by" placeholder="Name / Job title">
+      <label>Distribution</label><input type="text" id="distribution" placeholder="e.g. Operations Manager / Construction Manager">
+      <label>Doc. Ref #</label><input type="text" id="doc_ref" placeholder="To be filled by DC">
+    </div>
+  </div>
+
+  <!-- S1 Summary -->
+  <div class="section" id="s1">
+    <div class="card">
+      <div class="card-title">Executive summary (max 3 bullets)</div>
+      <label>1) Key achieved today</label><textarea id="exec1" placeholder="What was the main achievement today?"></textarea>
+      <label>2) Main blocker / delay</label><textarea id="exec2" placeholder="Describe any blockers or delays"></textarea>
+      <label>3) Critical note / escalation</label><textarea id="exec3" placeholder="Anything requiring escalation?"></textarea>
+    </div>
+  </div>
+
+  <!-- S2 Manpower -->
+  <div class="section" id="s2">
+    <div class="card">
+      <div class="card-title">Manpower</div>
+      <div class="table-scroll">
+        <table class="dt" id="manpower-table">
+          <thead><tr><th>Trade / Company</th><th>Planned</th><th>Actual</th><th>Area / Zone</th><th>OT Hrs</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="manpower-body"></tbody>
+          <tfoot><tr>
+            <td style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
+            <td id="mp-tp" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
+            <td id="mp-ta" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
+            <td colspan="4" style="background:var(--navy-light)"></td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('manpower')">+ Add trade / company</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Equipment / plant</div>
+      <div class="table-scroll">
+        <table class="dt" id="equipment-table">
+          <thead><tr><th>Equipment</th><th>Qty</th><th>Area / Zone</th><th>Downtime / Issue</th><th></th></tr></thead>
+          <tbody id="equipment-body"></tbody>
+          <tfoot><tr>
+            <td style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
+            <td id="eq-tq" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
+            <td colspan="3" style="background:var(--navy-light)"></td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('equipment')">+ Add equipment</button>
+    </div>
+  </div>
+
+  <!-- S3 Progress -->
+  <div class="section" id="s3">
+    <div class="card">
+      <div class="card-title">Work progress today (measured)</div>
+      <div class="table-scroll">
+        <table class="dt" id="progress-table">
+          <thead><tr><th>Area / Zone</th><th>Activity</th><th>Planned today</th><th>Actual today (Qty/% + Units)</th><th>Remarks / Constraints</th><th></th></tr></thead>
+          <tbody id="progress-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('progress')">+ Add activity</button>
+    </div>
+  </div>
+
+  <!-- S4 Materials -->
+  <div class="section" id="s4">
+    <div class="card">
+      <div class="card-title">Materials / deliveries</div>
+      <div class="table-scroll">
+        <table class="dt" id="materials-table">
+          <thead><tr><th>Item</th><th>Required for</th><th>Expected date</th><th>Delivered today</th><th>Status</th><th>Impact if delayed</th><th>Owner</th><th></th></tr></thead>
+          <tbody id="materials-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('materials')">+ Add material / delivery</button>
+    </div>
+  </div>
+
+  <!-- S5 Issues -->
+  <div class="section" id="s5">
+    <div class="card">
+      <div class="card-title">Issues / risks / actions (RAID log)</div>
+      <div class="table-scroll">
+        <table class="dt" id="issues-table">
+          <thead><tr><th>Type</th><th>Description</th><th>Impact (Time/Cost/Quality/HSE)</th><th>Owner</th><th>Due date</th><th>Status</th><th></th></tr></thead>
+          <tbody id="issues-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('issues')">+ Add issue / risk</button>
+    </div>
+  </div>
+
+  <!-- S6 Tomorrow -->
+  <div class="section" id="s6">
+    <div class="card">
+      <div class="card-title">Plan for tomorrow (clear tasks)</div>
+      <div class="table-scroll">
+        <table class="dt" id="tomorrow-table">
+          <thead><tr><th>Area / Zone</th><th>Activity</th><th>Target qty / output</th><th>Crew / trade</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="tomorrow-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow('tomorrow')">+ Add task</button>
+    </div>
+  </div>
+
+  <!-- S7 Photos -->
+  <div class="section" id="s7">
+    <div class="card">
+      <div class="card-title">Photos / evidence</div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <button class="add-row-btn" onclick="addPhotoSlot()">+ Add photo</button>
+    </div>
+  </div>
+
+  <!-- S8 Export -->
+  <div class="section" id="s8">
+    <div class="card">
+      <div class="card-title">Distribution list</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">DSR is emailed to these addresses on every export.</p>
+      <div class="email-tags" id="email-tags"></div>
+      <div class="email-input-row">
+        <input type="email" id="new-email" placeholder="Enter email address">
+        <button class="email-add-btn" onclick="addEmail()">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Report summary</div>
+      <div id="preview-summary"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Export &amp; send</div>
+      <button class="export-btn btn-save" onclick="saveDSR()">💾 &nbsp;Save DSR to project</button>
+      <button class="export-btn btn-excel" onclick="exportExcel()">&#9654; Download as Excel (.xlsx)</button>
+      <button class="export-btn btn-pdf" onclick="exportPDF()">&#9654; Download as PDF</button>
+      <button class="export-btn btn-email" onclick="sendEmail()">&#9654; Send via email to distribution list</button>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-prev" id="prev-btn" onclick="navigate(-1)">&#8592; Prev</button>
+    <button class="btn-next" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: New Project ===== -->
+<div class="modal-backdrop hidden" id="modal-new-project">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Project</div>
+    <label>Project name *</label><input type="text" id="np-name" placeholder="e.g. Villa Renovation - Palm Jumeirah">
+    <label>Project ID / reference</label><input type="text" id="np-id" placeholder="e.g. ALP-RRJ143-VND139">
+    <label>Client</label><input type="text" id="np-client" placeholder="Client full name">
+    <label>Location / Zone</label><input type="text" id="np-loc" placeholder="e.g. Palm Jumeirah Frond D">
+    <label>Main Contractor</label><input type="text" id="np-contractor" placeholder="Main contractor name">
+    <label>Consultant / Designer</label><input type="text" id="np-consultant" placeholder="Consultant / designer name">
+    <label>Prepared by (default)</label><input type="text" id="np-preparedby" placeholder="e.g. Manjit Singh / Project Engineer">
+    <label>Reviewed by (default)</label><input type="text" id="np-reviewedby" placeholder="e.g. Doris / PM">
+    <label>Default working hours</label><input type="text" id="np-hours" placeholder="08:00 - 17:00">
+    <div class="modal-actions">
+      <button class="btn-mc" onclick="closeModal('modal-new-project')">Cancel</button>
+      <button class="btn-mp" onclick="createProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Project DSR History ===== -->
+<div class="modal-backdrop hidden" id="modal-history">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="history-title">Project Reports</div>
+    <button class="fab" style="margin-bottom:14px" onclick="startNewDSR()">✏️ &nbsp;New DSR for Today</button>
+    <div id="dsr-history-list"></div>
+    <div class="modal-actions">
+      <button class="btn-mc" onclick="closeModal('modal-history')">Close</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-wrap -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STORAGE ───────────────────────────────────────────────
+const LSP='alpago_projects', LSR='alpago_reports';
+function lp(){try{return JSON.parse(localStorage.getItem(LSP)||'[]')}catch{return[]}}
+function sp(a){localStorage.setItem(LSP,JSON.stringify(a))}
+function lr(){try{return JSON.parse(localStorage.getItem(LSR)||'{}')}catch{return{}}}
+function sr(o){localStorage.setItem(LSR,JSON.stringify(o))}
+function getProjReports(pid){const a=lr();return(a[pid]||[]).sort((a,b)=>b.date.localeCompare(a.date))}
+function upsertReport(pid,data){
+  const all=lr(); if(!all[pid])all[pid]=[];
+  const date=data.header.proj_date||today();
+  const idx=all[pid].findIndex(r=>r.date===date);
+  const entry={date,data,savedAt:new Date().toISOString()};
+  if(idx>=0)all[pid][idx]=entry;else all[pid].push(entry);
+  sr(all);
+}
+function delReport(pid,date){const a=lr();if(a[pid])a[pid]=a[pid].filter(r=>r.date!==date);sr(a)}
+
+// ─── STATE ─────────────────────────────────────────────────
+const SECS=['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
+let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
+
+// ─── INIT ──────────────────────────────────────────────────
+(function(){
+  document.getElementById('today-badge').textContent=fmtDate(today());
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.addEventListener('click',()=>jumpTo(i)));
+  document.getElementById('new-email').addEventListener('keydown',e=>{if(e.key==='Enter')addEmail()});
+  document.getElementById('np-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProject()});
+  document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden')}));
+  renderHome();
+  checkSetup();
+})();
+
+function today(){return new Date().toISOString().split('T')[0]}
+function fmtDate(iso){if(!iso)return'';const[y,m,d]=iso.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${d} ${mn[parseInt(m)-1]} ${y}`}
+
+// ─── HOME ──────────────────────────────────────────────────
+function renderHome(){
+  const projects=lp();
+  const list=document.getElementById('proj-list');
+  if(!projects.length){
+    list.innerHTML='<div class="empty-state"><div>🏗️</div><strong>No projects yet</strong><br>Create your first project to start generating Daily Site Reports.</div>';
+    document.getElementById('quick-dsr-wrap').style.display='none';
+    return;
+  }
+  list.innerHTML=projects.map(p=>{
+    const reports=getProjReports(p.id);
+    const last=reports.length?reports[0].date:null;
+    const init=(p.name||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return`<div class="proj-card" onclick="openHistory('${p.id}')">
+      <button class="proj-del-btn" onclick="event.stopPropagation();deleteProjConfirm('${p.id}')" aria-label="Delete">🗑</button>
+      <div class="proj-card-top">
+        <div class="proj-avatar">${init}</div>
+        <div class="proj-card-info">
+          <div class="proj-card-name">${p.name}</div>
+          <div class="proj-card-sub">${p.refId?p.refId+' · ':''}${p.loc||'No location set'}</div>
+        </div>
+      </div>
+      <div class="proj-card-meta">
+        <span class="mpill">${reports.length} DSR${reports.length!==1?'s':''}</span>
+        ${last?`<span class="mpill green">Last: ${fmtDate(last)}</span>`:'<span class="mpill">No reports yet</span>'}
+        ${p.client?`<span class="mpill">${p.client}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('quick-dsr-wrap').style.display='block';
+}
+function goHome(){
+  document.getElementById('screen-dsr').classList.remove('active');
+  document.getElementById('screen-home').classList.add('active');
+  renderHome();
+}
+
+// ─── PROJECT CRUD ─────────────────────────────────────────
+function openNewProjectModal(){
+  ['np-name','np-id','np-client','np-loc','np-contractor','np-consultant','np-preparedby','np-reviewedby'].forEach(id=>{document.getElementById(id).value=''});
+  document.getElementById('np-hours').value='08:00 - 17:00';
+  showModal('modal-new-project');
+  setTimeout(()=>document.getElementById('np-name').focus(),250);
+}
+function createProject(){
+  const name=document.getElementById('np-name').value.trim();
+  if(!name){toast('Enter a project name');return}
+  const p={
+    id:'proj_'+Date.now(),name,
+    refId:document.getElementById('np-id').value.trim(),
+    client:document.getElementById('np-client').value.trim(),
+    loc:document.getElementById('np-loc').value.trim(),
+    contractor:document.getElementById('np-contractor').value.trim(),
+    consultant:document.getElementById('np-consultant').value.trim(),
+    preparedBy:document.getElementById('np-preparedby').value.trim(),
+    reviewedBy:document.getElementById('np-reviewedby').value.trim(),
+    hours:document.getElementById('np-hours').value.trim()||'08:00 - 17:00',
+    emails:['operations@alpago.ae','pm@alpago.ae'],
+    createdAt:new Date().toISOString()
+  };
+  const arr=lp(); arr.push(p); sp(arr);
+  closeModal('modal-new-project');
+  renderHome();
+  toast('Project created');
+  setTimeout(()=>openHistory(p.id),400);
+}
+function deleteProjConfirm(pid){
+  if(!confirm('Delete this project and all its DSRs? Cannot be undone.'))return;
+  sp(lp().filter(p=>p.id!==pid));
+  const a=lr(); delete a[pid]; sr(a);
+  renderHome(); toast('Project deleted');
+}
+
+// ─── HISTORY MODAL ────────────────────────────────────────
+function openHistory(pid){
+  viewPid=pid;
+  const proj=lp().find(p=>p.id===pid);
+  if(!proj)return;
+  document.getElementById('history-title').textContent=proj.name;
+  const reports=getProjReports(pid);
+  const c=document.getElementById('dsr-history-list');
+  if(!reports.length){
+    c.innerHTML='<div class="empty-state"><div>📋</div>No DSRs yet.<br>Tap "New DSR for Today" to start.</div>';
+  } else {
+    c.innerHTML=reports.map(r=>{
+      const mp=(r.data.manpower||[]).length;
+      const pr=(r.data.progress||[]).length;
+      return`<div class="dsr-item">
+        <div class="dsr-item-inner" onclick="openExistingDSR('${pid}','${r.date}')">
+          <div>
+            <div class="dsr-date">${fmtDate(r.date)}</div>
+            <div class="dsr-sub">${mp} manpower · ${pr} progress · ${(r.data.header||{}).proj_shift||'Day'} shift · Saved ${r.savedAt?r.savedAt.substring(11,16):''}</div>
+          </div>
+          <span class="dsr-badge">Open ›</span>
+        </div>
+        <button class="dsr-del" onclick="event.stopPropagation();delReportConfirm('${pid}','${r.date}')" aria-label="Delete">🗑</button>
+      </div>`;
+    }).join('');
+  }
+  showModal('modal-history');
+}
+function delReportConfirm(pid,date){
+  if(!confirm('Delete DSR for '+fmtDate(date)+'?'))return;
+  delReport(pid,date); openHistory(pid); toast('DSR deleted');
+}
+
+// ─── OPEN DSR ─────────────────────────────────────────────
+function openExistingDSR(pid,date){
+  closeModal('modal-history');
+  const r=getProjReports(pid).find(x=>x.date===date);
+  if(!r)return;
+  activePid=pid;
+  loadIntoForm(r.data,pid);
+  openDSRScreen(pid);
+}
+function startNewDSR(){
+  closeModal('modal-history');
+  activePid=viewPid;
+  const reports=getProjReports(activePid);
+  const prev=reports.length?reports[0]:null;
+  if(prev){
+    loadIntoForm(prev.data, activePid);
+    gv('proj_date', today());
+    document.getElementById('carryover-wrap').innerHTML=`
+      <div class="carryover-banner">
+        <div class="carryover-icon">🔄</div>
+        <div class="carryover-text">
+          <strong>Copied from ${fmtDate(prev.date)}</strong><br>
+          All data from the previous report has been kept. Please update today's progress, actuals, and issues before saving.
+        </div>
+      </div>`;
+  } else {
+    const proj=lp().find(p=>p.id===activePid);
+    clearForm(); resetTables();
+    if(proj){
+      gv('proj_name',proj.refId?(proj.refId+' - Daily Site Report'):proj.name);
+      gv('proj_loc',proj.loc||'');
+      gv('client',proj.client||'');
+      gv('consultant',proj.consultant||'');
+      gv('contractor',proj.contractor||'');
+      gv('prepared_by',proj.preparedBy||'');
+      gv('reviewed_by',proj.reviewedBy||'');
+      gv('hours',proj.hours||'08:00 - 17:00');
+      emails=proj.emails?[...proj.emails]:[];
+    }
+    gv('proj_date',today());
+    renderEmails();
+    addRow('manpower'); addRow('manpower'); addRow('manpower');
+    addRow('equipment'); addRow('equipment');
+    addRow('progress'); addRow('progress');
+    addRow('issues'); addRow('tomorrow'); addRow('tomorrow');
+    document.getElementById('carryover-wrap').innerHTML='';
+    buildPhotoGrid();
+  }
+  openDSRScreen(activePid);
+}
+function openQuickDSR(){
+  const ps=lp(); if(!ps.length)return;
+  viewPid=ps[ps.length-1].id; startNewDSR();
+}
+function openDSRScreen(pid){
+  const proj=lp().find(p=>p.id===pid);
+  document.getElementById('dsr-topbar-title').textContent=proj?proj.name:'Daily Site Report';
+  document.getElementById('dsr-topbar-sub').textContent=proj?(proj.refId||getCompany()):getCompany();
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-dsr').classList.add('active');
+  cur=0; jumpTo(0); updateTotals();
+}
+function loadIntoForm(data,pid){
+  clearForm(); resetTables();
+  const h=data.header||{};
+  const flds={proj_name:h.proj_name,proj_loc:h.proj_loc,proj_date:h.proj_date,proj_shift:h.proj_shift,
+    client:h.client,consultant:h.consultant,contractor:h.contractor,weather:h.weather,hours:h.hours,
+    prepared_by:h.prepared_by,reviewed_by:h.reviewed_by,distribution:h.distribution,doc_ref:h.doc_ref,
+    exec1:(data.summary||{}).exec1,exec2:(data.summary||{}).exec2,exec3:(data.summary||{}).exec3};
+  Object.entries(flds).forEach(([k,v])=>{ const el=document.getElementById(k); if(el&&v!==undefined) el.value=v||''; });
+  (data.manpower||[]).forEach(r=>addRowWithData('manpower',r));
+  (data.equipment||[]).forEach(r=>addRowWithData('equipment',r));
+  (data.progress||[]).forEach(r=>addRowWithData('progress',r));
+  (data.materials||[]).forEach(r=>addRowWithData('materials',r));
+  (data.issues||[]).forEach(r=>addRowWithData('issues',r));
+  (data.tomorrow||[]).forEach(r=>addRowWithData('tomorrow',r));
+  const proj=lp().find(p=>p.id===pid);
+  emails=data.emails&&data.emails.length?[...data.emails]:(proj&&proj.emails?[...proj.emails]:[]);
+  document.getElementById('carryover-wrap').innerHTML='';
+  buildPhotoGrid();
+  if(data.captions && data.captions.length > 0){
+    while(photoCount < data.captions.length) addPhotoSlot();
+    data.captions.forEach((cap, idx)=>{
+      const el = ge('pc'+(idx+1));
+      if(el) el.value = cap || '';
+    });
+  }
+  renderEmails();
+}
+
+// ─── SAVE ──────────────────────────────────────────────────
+function saveDSR(){
+  if(!activePid){toast('No active project');return}
+  const data=collectData();
+  const date=data.header.proj_date||today();
+  const projReports = lr()[activePid] || [];
+  const exists = projReports.some(r => r.date === date);
+  if (!exists) {
+    const total = Object.values(lr()).reduce((acc, arr) => acc + arr.length, 0);
+    if (total >= 50) {
+      alert("You have reached the maximum limit of 50 reports. Please delete old reports to create new ones.");
+      return;
+    }
+  }
+  upsertReport(activePid,data);
+  // persist email list back to project
+  const arr=lp(); const idx=arr.findIndex(p=>p.id===activePid);
+  if(idx>=0){arr[idx].emails=[...emails];sp(arr);}
+  toast('DSR saved to project ✓');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function getCompany() { return localStorage.getItem('company_name') || 'Your Company'; }
+function checkSetup() {
+  const c = localStorage.getItem('company_name');
+  if (!c) { showModal('modal-setup'); }
+  else { updateCompanyUI(c); }
+}
+function saveSetup() {
+  const c = ge('setup-company').value.trim();
+  if (!c) { toast('Please enter a company name'); return; }
+  localStorage.setItem('company_name', c);
+  updateCompanyUI(c);
+  closeModal('modal-setup');
+}
+function updateCompanyUI(c) {
+  const h1 = ge('home-company-name'); if(h1) h1.textContent = c;
+  const h2 = ge('dsr-topbar-sub'); if(h2 && !activePid) h2.textContent = c;
+}
+function editCompany() {
+  const c = prompt('Enter your company name:', localStorage.getItem('company_name') || '');
+  if (c !== null && c.trim() !== '') {
+    localStorage.setItem('company_name', c.trim());
+    updateCompanyUI(c.trim());
+  }
+}
+function ge(id){return document.getElementById(id)}
+function gv(id,val){const el=ge(id);if(el)el.value=val||''}
+function clearForm(){
+  ['proj_name','proj_loc','proj_date','client','consultant','contractor','hours',
+   'prepared_by','reviewed_by','distribution','doc_ref','exec1','exec2','exec3'].forEach(id=>gv(id,''));
+  gv('proj_date',today()); gv('proj_shift','Day'); gv('weather','Hot'); photoData={};
+}
+function resetTables(){
+  ['manpower','equipment','progress','materials','issues','tomorrow'].forEach(t=>ge(t+'-body').innerHTML='');
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────
+function jumpTo(i){
+  document.querySelectorAll('.nav-tab')[cur].classList.remove('active');
+  ge(SECS[cur]).classList.remove('active');
+  cur=Math.max(0,Math.min(SECS.length-1,i));
+  document.querySelectorAll('.nav-tab')[cur].classList.add('active');
+  ge(SECS[cur]).classList.add('active');
+  ge('prev-btn').style.visibility=cur===0?'hidden':'visible';
+  ge('next-btn').textContent=cur===SECS.length-1?'Done':'Next →';
+  updateProg(); if(cur===8)updatePreview(); window.scrollTo(0,0);
+  document.querySelectorAll('.nav-tab')[cur].scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'});
+}
+function navigate(d){jumpTo(cur+d)}
+function updateProg(){ge('prog-bar').innerHTML=SECS.map((_,i)=>`<div class="prog-seg ${i<cur?'done':i===cur?'active':''}"></div>`).join('')}
+
+// ─── TOAST ────────────────────────────────────────────────
+let _tt;
+function toast(msg,d=2800){clearTimeout(_tt);const el=ge('toast');el.textContent=msg;el.classList.add('show');_tt=setTimeout(()=>el.classList.remove('show'),d)}
+
+// ─── TABLE ROWS ───────────────────────────────────────────
+function inp(ph,w=''){return`<input type="text" placeholder="${ph}" style="min-width:${w}px">`}
+function num(ph){return`<input type="number" placeholder="${ph}" min="0" style="min-width:50px" oninput="updateTotals()">`}
+function di(){return`<input type="date" style="min-width:110px">`}
+function sel(...o){return`<select style="min-width:80px">${o.map(x=>`<option>${x}</option>`).join('')}</select>`}
+const TPLS={
+  manpower:()=>`<td>${inp('Company / trade',120)}</td><td>${num('0')}</td><td>${num('0')}</td><td>${inp('Zone',70)}</td><td>${num('0')}</td><td>${inp('Notes',80)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  equipment:()=>`<td>${inp('Equipment name',110)}</td><td>${num('0')}</td><td>${inp('Zone',70)}</td><td>${inp('Downtime / issue',110)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  progress:()=>`<td>${inp('Zone',80)}</td><td>${inp('Activity',120)}</td><td>${inp('Planned',60)}</td><td>${inp('Actual + units',80)}</td><td>${inp('Remarks',110)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  materials:()=>`<td>${inp('Item',90)}</td><td>${inp('Required for',90)}</td><td>${di()}</td><td>${inp('Qty / desc',80)}</td><td>${sel('OK','Delay')}</td><td>${inp('Impact',90)}</td><td>${inp('Owner',70)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  issues:()=>`<td>${sel('Issue','Risk','Action')}</td><td>${inp('Description',130)}</td><td>${inp('Time/Cost/Quality/HSE',100)}</td><td>${inp('Owner',70)}</td><td>${di()}</td><td>${sel('Open','In Progress','Closed')}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  tomorrow:()=>`<td>${inp('Zone',80)}</td><td>${inp('Activity',120)}</td><td>${inp('Target qty',80)}</td><td>${inp('Crew/trade',80)}</td><td>${inp('Notes',90)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+};
+function addRow(type){const tr=document.createElement('tr');tr.innerHTML=TPLS[type]();ge(type+'-body').appendChild(tr)}
+function addRowWithData(type,vals){
+  const tr=document.createElement('tr');tr.innerHTML=TPLS[type]();ge(type+'-body').appendChild(tr);
+  const inputs=[...tr.querySelectorAll('input,select')];
+  (vals||[]).forEach((v,i)=>{if(inputs[i]&&v!==undefined)inputs[i].value=v||''});
+  updateTotals();
+}
+function delRow(btn){btn.closest('tr').remove();updateTotals()}
+function updateTotals(){
+  let p=0,a=0;
+  document.querySelectorAll('#manpower-body tr').forEach(tr=>{const n=tr.querySelectorAll('input[type="number"]');p+=parseFloat(n[0]?.value||0)||0;a+=parseFloat(n[1]?.value||0)||0});
+  const mtp=ge('mp-tp'),mta=ge('mp-ta');if(mtp)mtp.textContent=p;if(mta)mta.textContent=a;
+  let q=0;document.querySelectorAll('#equipment-body tr').forEach(tr=>{const n=tr.querySelectorAll('input[type="number"]');q+=parseFloat(n[0]?.value||0)||0});
+  const eqt=ge('eq-tq');if(eqt)eqt.textContent=q;
+}
+
+// ─── PHOTOS ───────────────────────────────────────────────
+let photoCount = 0;
+function buildPhotoGrid(){
+  const grid=ge('photo-grid');grid.innerHTML='';photoData={};photoCount=0;
+  for(let i=0;i<4;i++) addPhotoSlot();
+}
+function addPhotoSlot(){
+  photoCount++;
+  const i = photoCount;
+  const grid=ge('photo-grid');
+  const item=document.createElement('div');item.className='photo-item';
+  const slot=document.createElement('div');slot.className='photo-slot';slot.id='ps'+i;
+  const fi=document.createElement('input');fi.type='file';fi.accept='image/*';
+  fi.addEventListener('change',function(){
+    if(this.files&&this.files[0]){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        photoData[i]=e.target.result;
+        slot.querySelector('.ps-icon').style.display='none';
+        slot.querySelector('.ps-lbl').style.display='none';
+        const old=slot.querySelector('img');if(old)old.remove();
+        const img=document.createElement('img');img.src=e.target.result;slot.appendChild(img);
+      };reader.readAsDataURL(this.files[0]);
+    }
+  });
+  const icon=document.createElement('div');icon.className='ps-icon';icon.textContent='📷';
+  const lbl=document.createElement('div');lbl.className='ps-lbl';lbl.textContent='Photo '+i;
+  slot.appendChild(fi);slot.appendChild(icon);slot.appendChild(lbl);
+  const cap=document.createElement('input');cap.type='text';cap.className='photo-caption';cap.placeholder='Caption for photo '+i;cap.id='pc'+i;
+  item.appendChild(slot);item.appendChild(cap);grid.appendChild(item);
+}
+
+// ─── EMAILS ───────────────────────────────────────────────
+function renderEmails(){ge('email-tags').innerHTML=emails.map((e,i)=>`<span class="email-tag">${e}<button onclick="removeEmail(${i})">x</button></span>`).join('')}
+function addEmail(){const inp=ge('new-email');const val=inp.value.trim().toLowerCase();if(!val||!val.includes('@')||!val.includes('.')){toast('Enter a valid email');return}if(emails.includes(val)){toast('Already in list');return}emails.push(val);renderEmails();inp.value='';toast('Email added')}
+function removeEmail(i){emails.splice(i,1);renderEmails()}
+
+// ─── COLLECT DATA ─────────────────────────────────────────
+function collectRows(tbodyId){const rows=[];document.querySelectorAll('#'+tbodyId+' tr').forEach(tr=>{rows.push([...tr.querySelectorAll('input,select')].map(el=>el.value))});return rows}
+function collectData(){
+  const gv=id=>ge(id)?ge(id).value:'';
+  return{
+    header:{proj_name:gv('proj_name'),proj_loc:gv('proj_loc'),proj_date:gv('proj_date'),proj_shift:gv('proj_shift'),client:gv('client'),consultant:gv('consultant'),contractor:gv('contractor'),weather:gv('weather'),hours:gv('hours'),prepared_by:gv('prepared_by'),reviewed_by:gv('reviewed_by'),distribution:gv('distribution'),doc_ref:gv('doc_ref')},
+    summary:{exec1:gv('exec1'),exec2:gv('exec2'),exec3:gv('exec3')},
+    manpower:collectRows('manpower-body'),equipment:collectRows('equipment-body'),
+    progress:collectRows('progress-body'),materials:collectRows('materials-body'),
+    issues:collectRows('issues-body'),tomorrow:collectRows('tomorrow-body'),
+    captions:Array.from({length: photoCount}, (_, idx)=>{const el=ge('pc'+(idx+1));return el?el.value:''}),
+    emails:[...emails]
+  };
+}
+
+// ─── PREVIEW ──────────────────────────────────────────────
+function updatePreview(){
+  const d=collectData();
+  ge('preview-summary').innerHTML=[
+    ['Project',d.header.proj_name||'—'],['Date / Shift',(d.header.proj_date||'—')+' · '+d.header.proj_shift],
+    ['Location',d.header.proj_loc||'—'],['Client',d.header.client||'—'],['Prepared by',d.header.prepared_by||'—'],
+    ['Manpower rows',document.querySelectorAll('#manpower-body tr').length],
+    ['Progress rows',document.querySelectorAll('#progress-body tr').length],
+    ['Issues / risks',document.querySelectorAll('#issues-body tr').length],
+    ["Tomorrow's tasks",document.querySelectorAll('#tomorrow-body tr').length],
+    ['Photos attached',Object.keys(photoData).length],
+    ['Distribution',emails.length+' email'+(emails.length!==1?'s':'')],
+  ].map(([k,v])=>`<div class="preview-row"><span>${k}</span><span class="preview-val">${v}</span></div>`).join('');
+}
+
+// ─── MODAL HELPERS ────────────────────────────────────────
+function showModal(id){ge(id).classList.remove('hidden')}
+function closeModal(id){ge(id).classList.add('hidden')}
+
+// ─── EXPORT: EXCEL ────────────────────────────────────────
+function exportExcel(){
+  try{
+    const d=collectData(),wb=XLSX.utils.book_new();
+    const navy='000000';
+    const H=t=>({v:String(t).toUpperCase(),t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}},alignment:{horizontal:'center'}}});
+    const T=t=>({v:t||'',t:'s'});const B=t=>({v:t||'',t:'s',s:{font:{bold:true}}});
+    const rows=[];
+    rows.push([{v:`${getCompany().toUpperCase()} — DAILY SITE REPORT (DSR)`,t:'s',s:{font:{bold:true,sz:13,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}},alignment:{horizontal:'center'}}},'','','','','','','']);
+    rows.push([B('Project Name/ID'),T(d.header.proj_name),'',B('Location / Zone'),T(d.header.proj_loc),'',B('Date'),T(d.header.proj_date)]);
+    rows.push([B('Client'),T(d.header.client),'',B('Consultant'),T(d.header.consultant),'',B('Shift'),T(d.header.proj_shift)]);
+    rows.push([B('Contractor'),T(d.header.contractor),'',B('Weather'),T(d.header.weather),'',B('Working Hours'),T(d.header.hours)]);
+    rows.push([B('Prepared By'),T(d.header.prepared_by),'',B('Reviewed By'),T(d.header.reviewed_by),'',B('Distribution'),T(d.header.distribution)]);
+    rows.push([B('Doc. Ref #'),T(d.header.doc_ref),'','','','','','']);rows.push([]);
+    rows.push([{v:'EXECUTIVE SUMMARY',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push([B('1) Key achieved today'),T(d.summary.exec1)]);rows.push([B('2) Main blocker / delay'),T(d.summary.exec2)]);rows.push([B('3) Critical note / escalation'),T(d.summary.exec3)]);rows.push([]);
+    rows.push([{v:'MANPOWER & PLANT',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push(['Trade / Company','Planned','Actual','Area/Zone','OT Hours','Notes','Equipment','Qty','Area/Zone','Downtime'].map(H));
+    const mm=Math.max(d.manpower.length,d.equipment.length);
+    for(let i=0;i<mm;i++){const mp=d.manpower[i]||['','','','','',''];const eq=d.equipment[i]||['','','',''];rows.push([T(mp[0]),T(mp[1]),T(mp[2]),T(mp[3]),T(mp[4]),T(mp[5]),T(eq[0]),T(eq[1]),T(eq[2]),T(eq[3])]);}
+    rows.push([]);
+    rows.push([{v:'WORK PROGRESS TODAY',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push(['Area/Zone','Activity','Planned Today','Actual Today','Remarks'].map(H));
+    d.progress.forEach(r=>rows.push(r.map(T)));rows.push([]);
+    rows.push([{v:'MATERIALS / DELIVERIES',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push(['Item','Required For','Expected Date','Delivered','Status','Impact if Delayed','Owner'].map(H));
+    d.materials.forEach(r=>rows.push(r.map(T)));rows.push([]);
+    rows.push([{v:'ISSUES / RISKS / ACTIONS (RAID LOG)',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push(['Type','Description','Impact','Owner','Due Date','Status'].map(H));
+    d.issues.forEach(r=>rows.push(r.map(T)));rows.push([]);
+    rows.push([{v:'PLAN FOR TOMORROW',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    rows.push(['Area/Zone','Activity','Target Qty/Output','Crew/Trade','Notes'].map(H));
+    d.tomorrow.forEach(r=>rows.push(r.map(T)));rows.push([]);
+    rows.push([{v:'PHOTOS / EVIDENCE',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
+    for(let i=0; i<d.captions.length; i+=2){
+      const c1 = d.captions[i] || '';
+      const c2 = d.captions[i+1] || '';
+      rows.push([B('Photo '+(i+1)+' Caption'),T(c1),'', i+1<d.captions.length ? B('Photo '+(i+2)+' Caption') : '', i+1<d.captions.length ? T(c2) : '']);
+    }
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[20,18,18,18,18,20,20,8,18,22].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb,ws,'Daily Site Report');
+    XLSX.writeFile(wb,'DSR_'+(d.header.proj_date||today())+'.xlsx');
+    toast('Excel downloaded');
+  }catch(e){console.error(e);toast('Export failed')}
+}
+
+// ─── EXPORT: PDF ──────────────────────────────────────────
+function exportPDF(){
+  try{
+    const {jsPDF}=window.jspdf,d=collectData();
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const PW=210,PH=297,M=10;let y=M;
+    const navy=[0,0,0],accent=[0,0,0],lb=[255,255,255];
+    doc.setFillColor(...navy);doc.rect(M,y,PW-2*M,12,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);
+    doc.text('ALPAGO DESIGN & BUILD — DAILY SITE REPORT (DSR)',PW/2,y+8,{align:'center'});y+=15;
+    doc.setFillColor(...accent);doc.rect(M,y,PW-2*M,1.5,'F');y+=5;
+    const info=[['Project Name/ID',d.header.proj_name,'Location / Zone',d.header.proj_loc],['Client',d.header.client,'Consultant',d.header.consultant],['Main Contractor',d.header.contractor,'Date',d.header.proj_date+' · '+d.header.proj_shift],['Weather',d.header.weather,'Working Hours',d.header.hours],['Prepared By',d.header.prepared_by,'Reviewed By',d.header.reviewed_by],['Distribution',d.header.distribution,'Doc. Ref #',d.header.doc_ref]];
+    doc.setFontSize(7.5);
+    info.forEach(row=>{
+      doc.setFillColor(...lb);doc.rect(M,y,(PW-2*M)/2-2,6,'F');doc.rect(PW/2+2,y,(PW-2*M)/2-2,6,'F');
+      doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.text(row[0]+':',M+2,y+4);
+      doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');doc.text(String(row[1]||''),M+40,y+4);
+      doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.text(row[2]+':',PW/2+4,y+4);
+      doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');doc.text(String(row[3]||''),PW/2+40,y+4);
+      y+=7;
+    });y+=3;
+    function sh(title){if(y>PH-40){doc.addPage();y=M;}doc.setFillColor(...navy);doc.rect(M,y,PW-2*M,7,'F');doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(255,255,255);doc.text(title.toUpperCase(),M+3,y+5);y+=9;doc.setTextColor(0,0,0);}
+    sh('EXECUTIVE SUMMARY');
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    [['1) Key achieved today',d.summary.exec1],['2) Main blocker / delay',d.summary.exec2],['3) Critical note / escalation',d.summary.exec3]].forEach(([k,v])=>{if(!v)return;doc.setFont('helvetica','bold');doc.setTextColor(...navy);doc.text(k+':',M+2,y);y+=5;doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);doc.splitTextToSize(v,PW-2*M-4).forEach(l=>{doc.text(l,M+4,y);y+=4.5;});y+=2;});
+    sh('MANPOWER & PLANT');
+    if(d.manpower.length){doc.autoTable({startY:y,head:[['Trade / Company','Planned','Actual','Area/Zone','OT Hours','Notes'].map(x=>x.toUpperCase())],body:d.manpower.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
+    if(d.equipment.length){doc.autoTable({startY:y,head:[['Equipment','Qty','Area/Zone','Downtime / Issue'].map(x=>x.toUpperCase())],body:d.equipment.map(r=>[r[0],r[1],r[2],r[3]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
+    sh('WORK PROGRESS TODAY (MEASURED)');
+    if(d.progress.length){doc.autoTable({startY:y,head:[['Area/Zone','Activity','Planned Today','Actual Today','Remarks'].map(x=>x.toUpperCase())],body:d.progress.map(r=>[r[0],r[1],r[2],r[3],r[4]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
+    sh('MATERIALS / DELIVERIES');
+    if(d.materials.length){doc.autoTable({startY:y,head:[['Item','Required For','Expected Date','Delivered','Status','Impact if Delayed','Owner'].map(x=>x.toUpperCase())],body:d.materials.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5],r[6]]),styles:{fontSize:6.5,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
+    sh('ISSUES / RISKS / ACTIONS (RAID LOG)');
+    if(d.issues.length){doc.autoTable({startY:y,head:[['Type','Description','Impact','Owner','Due Date','Status'].map(x=>x.toUpperCase())],body:d.issues.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
+    sh('PLAN FOR TOMORROW (CLEAR TASKS)');
+    if(d.tomorrow.length){doc.autoTable({startY:y,head:[['Area/Zone','Activity','Target Qty/Output','Crew/Trade','Notes'].map(x=>x.toUpperCase())],body:d.tomorrow.map(r=>[r[0],r[1],r[2],r[3],r[4]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
+    sh('PHOTOS / EVIDENCE');
+    const pkeys=Object.keys(photoData);
+    if(pkeys.length){const iw=(PW-2*M-5)/2,ih=iw*0.75;let px=M,py=y;pkeys.forEach((num,idx)=>{if(py+ih+15>PH-M){doc.addPage();py=M;}try{doc.addImage(photoData[num],'JPEG',px,py,iw,ih);}catch(e){}doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(80,80,80);doc.text('Photo '+num+': '+(ge('pc'+num)?.value||''),px,py+ih+4);if(idx%2===0){px=M+iw+5;}else{px=M;py+=ih+14;}});y=py+(pkeys.length%2!==0?ih+14:5);}else{doc.setFontSize(8);doc.setTextColor(150,150,150);doc.setFont('helvetica','italic');doc.text('No photos attached.',M+2,y+5);}
+    const pc=doc.internal.getNumberOfPages();
+    for(let i=1;i<=pc;i++){doc.setPage(i);doc.setFillColor(...navy);doc.rect(M,PH-10,PW-2*M,6,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(`${getCompany().toUpperCase()} — DAILY SITE REPORT`,M+3,PH-6);doc.text('Page '+i+' of '+pc,PW-M-3,PH-6,{align:'right'});doc.text(d.header.proj_date||'',PW/2,PH-6,{align:'center'});}
+    doc.save('DSR_'+(d.header.proj_date||today())+'.pdf');toast('PDF downloaded');
+  }catch(e){console.error(e);toast('PDF export failed')}
+}
+
+// ─── EMAIL ────────────────────────────────────────────────
+function sendEmail(){
+  if(!emails.length){toast('Add at least one email first');return}
+  const d=collectData();
+  const sub=encodeURIComponent('Daily Site Report - '+(d.header.proj_name||'Project')+' - '+(d.header.proj_date||''));
+  const body=encodeURIComponent('Please find attached the Daily Site Report.\n\nProject: '+(d.header.proj_name||'')+'\nDate: '+(d.header.proj_date||'')+' - '+(d.header.proj_shift||'')+' shift\nLocation: '+(d.header.proj_loc||'')+'\nPrepared by: '+(d.header.prepared_by||'')+'\n\nSummary:\n1) '+(d.summary.exec1||'-')+'\n2) '+(d.summary.exec2||'-')+'\n3) '+(d.summary.exec3||'-')+'\n\nPlease attach the exported Excel / PDF file.\n\nRegards,\n'+(d.header.prepared_by||'Site Team'));
+  window.location.href='mailto:'+emails.join(',')+'?subject='+sub+'&body='+body;
+  toast('Opening email client...');
+}
+
+// ─── SERVICE WORKER ───────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered', reg))
+      .catch(err => console.error('Service Worker registration failed', err));
+  });
+}
+</script>
+</body>
+</html>
