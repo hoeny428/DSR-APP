@@ -150,6 +150,70 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
 .carryover-text{font-size:12px;color:var(--navy);line-height:1.5}
 .carryover-text strong{font-weight:700}
 @media(min-width:600px){.app-wrap{max-width:600px;margin:0 auto}.bottom-bar{max-width:600px;left:50%;transform:translateX(-50%)}}
+/* BOTTOM TAB BAR */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 999;
+}
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  font-size: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.tab-btn .tab-icon {
+  font-size: 20px;
+  margin-bottom: 3px;
+}
+.tab-btn.active {
+  color: var(--navy);
+  font-weight: 700;
+}
+.tab-btn.active .tab-icon {
+  transform: scale(1.1);
+  transition: transform 0.2s;
+}
+.screen-with-tabs { padding-bottom: 70px !important; }
+
+/* GLOBALS */
+.global-metric {
+  background: var(--navy-light);
+  border-radius: var(--rs);
+  padding: 14px;
+  text-align: center;
+  flex: 1;
+}
+.global-metric h3 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.global-metric .val { font-size: 24px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+.personnel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.personnel-card h4 { font-size: 14px; color: var(--text); }
+.personnel-card p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.personnel-del {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: transparent; border: none; color: var(--muted); font-size: 16px; cursor: pointer;
+}
+.personnel-del:hover { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -167,8 +231,8 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
   </div>
 </div>
 
-<!-- ===== SCREEN: HOME ===== -->
-<div class="screen active" id="screen-home">
+<!-- ===== SCREEN: HOME (PROJECTS) ===== -->
+<div class="screen screen-with-tabs" id="screen-home">
   <div class="home-topbar">
     <div class="home-topbar-row">
       <div class="logo-box">DSR</div>
@@ -360,6 +424,7 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
         <input type="email" id="new-email" placeholder="Enter email address">
         <button class="email-add-btn" onclick="addEmail()">+ Add</button>
       </div>
+      <div id="quick-add-personnel" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px"></div>
     </div>
     <div class="card">
       <div class="card-title">Report summary</div>
@@ -423,8 +488,8 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
   </div>
 </div>
 
-<!-- ===== SCREEN: DASHBOARD ===== -->
-<div class="screen" id="screen-dashboard">
+<!-- ===== SCREEN: DASHBOARD (ANALYTICS) ===== -->
+<div class="screen active screen-with-tabs" id="screen-dashboard">
   <div class="topbar">
     <button class="back-btn" onclick="closeDashboard()" aria-label="Back">&#8592;</button>
     <div class="topbar-info">
@@ -480,16 +545,126 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
   </div>
 </div>
 
+</div>
+
+  <!-- ===== SCREEN: PERSONNEL ===== -->
+  <div class="screen screen-with-tabs" id="screen-personnel">
+    <div class="home-topbar">
+      <div class="home-topbar-row">
+        <div class="logo-box">👥</div>
+        <div>
+          <h1>Personnel Directory</h1>
+          <p>Manage project team contacts</p>
+        </div>
+      </div>
+    </div>
+    <div class="home-body">
+      <button class="fab" onclick="showModal('modal-personnel')">+ Add Personnel</button>
+      <div id="personnel-list" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: REPORTS ===== -->
+  <div class="screen screen-with-tabs" id="screen-reports">
+    <div class="home-topbar">
+      <div class="home-topbar-row">
+        <div class="logo-box">📋</div>
+        <div>
+          <h1>Global Reports</h1>
+          <p>All reports across all projects</p>
+        </div>
+      </div>
+    </div>
+    <div class="home-body">
+      <div id="global-reports-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: SETTINGS ===== -->
+  <div class="screen screen-with-tabs" id="screen-settings">
+    <div class="home-topbar">
+      <div class="home-topbar-row">
+        <div class="logo-box">⚙️</div>
+        <div>
+          <h1>Settings</h1>
+          <p>App configuration</p>
+        </div>
+      </div>
+    </div>
+    <div class="home-body">
+      <div class="empty-state">
+        <div>⚙️</div>
+        Settings configuration coming soon.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav" id="main-bottom-nav">
+    <div class="tab-btn active" onclick="switchMainTab('analytics')" id="tab-btn-analytics">
+      <div class="tab-icon">📊</div>
+      <div>Analytics</div>
+    </div>
+    <div class="tab-btn" onclick="switchMainTab('home')" id="tab-btn-home">
+      <div class="tab-icon">🏗️</div>
+      <div>Project</div>
+    </div>
+    <div class="tab-btn" onclick="switchMainTab('personnel')" id="tab-btn-personnel">
+      <div class="tab-icon">👥</div>
+      <div>Personnel</div>
+    </div>
+    <div class="tab-btn" onclick="switchMainTab('reports')" id="tab-btn-reports">
+      <div class="tab-icon">📋</div>
+      <div>Report</div>
+    </div>
+    <div class="tab-btn" onclick="switchMainTab('settings')" id="tab-btn-settings">
+      <div class="tab-icon">⚙️</div>
+      <div>Setting</div>
+    </div>
+  </nav>
+
 </div><!-- /app-wrap -->
+
+<!-- MODAL: PERSONNEL -->
+<div class="modal-backdrop hidden" id="modal-personnel">
+  <div class="modal" style="margin:auto">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">Add Personnel</h2>
+    <div style="margin-bottom:12px">
+      <label>Name</label>
+      <input type="text" id="per-name" placeholder="e.g. John Doe">
+    </div>
+    <div style="margin-bottom:12px">
+      <label>Role</label>
+      <select id="per-role">
+        <option value="Project Manager">Project Manager</option>
+        <option value="Project Engineer">Project Engineer</option>
+        <option value="Operation Manager">Operation Manager</option>
+        <option value="Site Engineer">Site Engineer</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px">
+      <label>Email</label>
+      <input type="email" id="per-email" placeholder="john@example.com">
+    </div>
+    <label>Contact No.</label>
+      <input type="text" id="per-phone" placeholder="+971 50 123 4567">
+    </div>
+    <button class="fab" onclick="savePersonnel()">Save Personnel</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
 // ─── STORAGE ───────────────────────────────────────────────
-const LSP='alpago_projects', LSR='alpago_reports';
+const LSP='alpago_projects', LSR='alpago_reports', LPE='alpago_personnel';
 function lp(){try{return JSON.parse(localStorage.getItem(LSP)||'[]')}catch{return[]}}
 function sp(a){localStorage.setItem(LSP,JSON.stringify(a))}
 function lr(){try{return JSON.parse(localStorage.getItem(LSR)||'{}')}catch{return{}}}
 function sr(o){localStorage.setItem(LSR,JSON.stringify(o))}
+function lpe(){try{return JSON.parse(localStorage.getItem(LPE)||'[]')}catch{return[]}}
+function spe(a){localStorage.setItem(LPE,JSON.stringify(a))}
 function getProjReports(pid){const a=lr();return(a[pid]||[]).sort((a,b)=>b.date.localeCompare(a.date))}
 function upsertReport(pid,data){
   const all=lr(); if(!all[pid])all[pid]=[];
@@ -504,6 +679,7 @@ function delReport(pid,date){const a=lr();if(a[pid])a[pid]=a[pid].filter(r=>r.da
 // ─── STATE ─────────────────────────────────────────────────
 const SECS=['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
 let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
+let currentTab = 'analytics';
 
 // ─── INIT ──────────────────────────────────────────────────
 (function(){
@@ -512,14 +688,106 @@ let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
   document.getElementById('new-email').addEventListener('keydown',e=>{if(e.key==='Enter')addEmail()});
   document.getElementById('np-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProject()});
   document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden')}));
-  renderHome();
+  switchMainTab('analytics');
   checkSetup();
 })();
+
+function switchMainTab(tabId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + tabId).classList.add('active');
+  document.getElementById('tab-btn-' + tabId).classList.add('active');
+  currentTab = tabId;
+  
+  if(tabId === 'home') renderHome();
+  if(tabId === 'analytics') renderGlobalDashboard();
+  if(tabId === 'personnel') renderPersonnel();
+  if(tabId === 'reports') renderGlobalReports();
+}
 
 function today(){return new Date().toISOString().split('T')[0]}
 function fmtDate(iso){if(!iso)return'';const[y,m,d]=iso.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${d} ${mn[parseInt(m)-1]} ${y}`}
 
 // ─── HOME ──────────────────────────────────────────────────
+// ─── PERSONNEL LOGIC ───────────────────────────────────────
+function renderPersonnel() {
+  const pList = lpe();
+  const list = document.getElementById('personnel-list');
+  if(!pList.length) {
+    list.innerHTML = '<div class="empty-state"><div>👥</div><strong>No Personnel added</strong><br>Add team members to easily include them in report distributions.</div>';
+    return;
+  }
+  list.innerHTML = pList.map((p, i) => `
+    <div class="personnel-card">
+      <button class="personnel-del" onclick="deletePersonnel(${i})">✖</button>
+      <h4>${p.name} <span style="font-size:11px;font-weight:400;color:var(--muted)">(${p.role})</span></h4>
+      <p>✉️ ${p.email || 'N/A'}</p>
+      <p>📞 ${p.phone || 'N/A'}</p>
+    </div>
+  `).join('');
+}
+
+function savePersonnel() {
+  const name = document.getElementById('per-name').value.trim();
+  const role = document.getElementById('per-role').value;
+  const email = document.getElementById('per-email').value.trim();
+  const phone = document.getElementById('per-phone').value.trim();
+  if(!name) return toast('Name is required');
+  const pList = lpe();
+  pList.push({ name, role, email, phone });
+  spe(pList);
+  document.getElementById('per-name').value = '';
+  document.getElementById('per-email').value = '';
+  document.getElementById('per-phone').value = '';
+  document.getElementById('modal-personnel').classList.add('hidden');
+  renderPersonnel();
+  toast('Personnel added');
+}
+
+function deletePersonnel(idx) {
+  if(!confirm('Delete this contact?')) return;
+  const pList = lpe();
+  pList.splice(idx, 1);
+  spe(pList);
+  renderPersonnel();
+}
+
+// ─── GLOBAL REPORTS LOGIC ──────────────────────────────────
+function renderGlobalReports() {
+  const projects = lp();
+  const allReports = lr();
+  const list = document.getElementById('global-reports-list');
+  
+  let flat = [];
+  projects.forEach(p => {
+    const projReports = allReports[p.id] || [];
+    projReports.forEach(r => {
+      flat.push({ ...r, projName: p.name, pid: p.id });
+    });
+  });
+  flat.sort((a,b) => b.date.localeCompare(a.date));
+  
+  if(!flat.length) {
+    list.innerHTML = '<div class="empty-state"><div>📋</div><strong>No reports found</strong><br>Create reports in your projects to see them here.</div>';
+    return;
+  }
+  
+  list.innerHTML = flat.map(r => {
+    let mpCount = 0;
+    (r.data.manpower||[]).forEach(row => mpCount += Number(row[2]||0));
+    return `
+    <div class="dsr-item">
+      <div class="dsr-item-inner" onclick="openExistingDSR('${r.pid}', '${r.date}')">
+        <div>
+          <div class="dsr-date">${fmtDate(r.date)} <span style="font-size:11px;font-weight:400;color:var(--muted)">• ${r.projName}</span></div>
+          <div class="dsr-sub">Manpower: ${mpCount}</div>
+        </div>
+        <div class="dsr-badge">${r.data.header?.proj_shift || 'Day'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderHome(){
   const projects=lp();
   const list=document.getElementById('proj-list');
@@ -887,7 +1155,16 @@ function addPhotoSlot(){
 }
 
 // ─── EMAILS ───────────────────────────────────────────────
-function renderEmails(){ge('email-tags').innerHTML=emails.map((e,i)=>`<span class="email-tag">${e}<button onclick="removeEmail(${i})">x</button></span>`).join('')}
+function renderEmails(){
+  ge('email-tags').innerHTML=emails.map((e,i)=>`<span class="email-tag">${e}<button onclick="removeEmail(${i})">x</button></span>`).join('');
+  const qa = ge('quick-add-personnel');
+  if(qa) {
+    qa.innerHTML = lpe().filter(p => p.email && !emails.includes(p.email)).map(p => 
+      `<button class="mpill" style="cursor:pointer;border:1px solid var(--border)" onclick="addQuickEmail('${p.email}')">+ ${p.name} (${p.role})</button>`
+    ).join('');
+  }
+}
+function addQuickEmail(email){ if(!emails.includes(email)){ emails.push(email); renderEmails(); toast('Email added'); } }
 function addEmail(){const inp=ge('new-email');const val=inp.value.trim().toLowerCase();if(!val||!val.includes('@')||!val.includes('.')){toast('Enter a valid email');return}if(emails.includes(val)){toast('Already in list');return}emails.push(val);renderEmails();inp.value='';toast('Email added')}
 function removeEmail(i){emails.splice(i,1);renderEmails()}
 
@@ -1157,92 +1434,81 @@ function exportLogsPDF(pid){
 }
 
 let dashChartObj = null;
-let dashData = [];
-let dashRange = 'week'; 
 
-function openDashboard(pid){
-  closeModal('modal-history');
-  const proj=lp().find(p=>p.id===pid);
-  document.getElementById('dash-topbar-sub').textContent=proj?proj.name:'';
-  document.getElementById('screen-home').classList.remove('active');
-  document.getElementById('screen-plan').classList.remove('active');
-  document.getElementById('screen-dsr').classList.remove('active');
-  document.getElementById('screen-dashboard').classList.add('active');
+function renderGlobalDashboard(){
+  const projects = lp();
+  const allReports = lr();
   
-  dashData = getProjReports(pid).reverse();
-  setDashRange('week');
-}
-
-function closeDashboard(){
-  document.getElementById('screen-dashboard').classList.remove('active');
-  document.getElementById('screen-home').classList.add('active');
-}
-
-function getWeekStr(dStr){
-  const d = new Date(dStr);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + yearStart.getDay() + 1) / 7);
-  return d.getFullYear() + '-W' + weekNo;
-}
-
-function getMonthStr(dStr){ return dStr.substring(0, 7); }
-
-function setDashRange(range){
-  dashRange = range;
-  ge('btn-dash-week').classList.toggle('active', range === 'week');
-  ge('btn-dash-month').classList.toggle('active', range === 'month');
-  renderDashboard();
-}
-
-function renderDashboard(){
-  let totalRes = 0;
-  const groups = {}; 
-  const contractors = new Set();
+  const ctx = document.getElementById('dash-chart');
+  if(!ctx) return;
   
-  dashData.forEach(r => {
-    const timeKey = dashRange === 'week' ? getWeekStr(r.date) : getMonthStr(r.date);
-    if(!groups[timeKey]) groups[timeKey] = {};
-    
-    (r.data.manpower||[]).forEach(row => {
-      const contractor = (row[0] || 'Unknown').trim();
-      const actual = parseInt(row[2]) || 0;
-      contractors.add(contractor);
-      
-      if(!groups[timeKey][contractor]) groups[timeKey][contractor] = 0;
-      groups[timeKey][contractor] += actual;
-      totalRes += actual;
+  document.getElementById('dash-active-proj').textContent = projects.length;
+  
+  let totalActual = 0;
+  let totalPlanned = 0;
+  let contractorData = {}; // { 'Contractor Name': actualCount }
+  
+  projects.forEach(p => {
+    const rpts = allReports[p.id] || [];
+    rpts.forEach(r => {
+      (r.data.manpower||[]).forEach(row => {
+        let planned = Number(row[1]) || 0;
+        let actual = Number(row[2]) || 0;
+        let contractor = row[0] ? String(row[0]).trim() : 'Unknown';
+        if(contractor === '') contractor = 'Unknown';
+        
+        totalPlanned += planned;
+        totalActual += actual;
+        
+        if(!contractorData[contractor]) contractorData[contractor] = 0;
+        contractorData[contractor] += actual;
+      });
     });
   });
   
-  ge('dash-total-res').textContent = totalRes;
+  document.getElementById('dash-total-res').textContent = totalActual.toLocaleString();
   
-  const labels = Object.keys(groups).sort();
-  const datasets = Array.from(contractors).map((c, i) => {
-    const hue = (i * 137.508) % 360; 
-    return {
-      label: c,
-      data: labels.map(l => groups[l][c] || 0),
-      backgroundColor: `hsl(${hue}, 70%, 50%)`,
-      stack: 'Stack 0'
-    };
-  });
+  let efficiency = 0;
+  if (totalPlanned > 0) {
+    efficiency = Math.round((totalActual / totalPlanned) * 100);
+  }
+  document.getElementById('dash-efficiency').textContent = efficiency + '%';
   
-  const ctx = ge('dash-chart');
-  if(!ctx) return;
-  if(dashChartObj) dashChartObj.destroy();
+  // Render Chart
   if(!window.Chart){
     ctx.outerHTML = '<div id="dash-chart" style="padding:20px;text-align:center;color:red">Failed to load charting library. Please check your connection.</div>';
     return;
   }
   
+  if(dashChartObj) {
+    dashChartObj.destroy();
+  }
+  
+  const labels = Object.keys(contractorData);
+  const data = Object.values(contractorData);
+  const bgColors = labels.map((l,i) => `hsl(${(i*137.5)%360}, 70%, 50%)`);
+  
   dashChartObj = new Chart(ctx, {
     type: 'bar',
-    data: { labels: labels, datasets: datasets },
+    data: {
+      labels: labels.length ? labels : ['No Data'],
+      datasets: [{
+        label: 'Total Manpower',
+        data: data.length ? data : [0],
+        backgroundColor: bgColors,
+        borderRadius: 4
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } },
-      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+        x: { grid: { display: false } }
+      }
     }
   });
 }
