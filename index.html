@@ -1149,7 +1149,7 @@ function exportLogsPDF(pid){
       html += `<tr class="type-eq"><td>${d}</td><td>Equipment</td><td>${row[0]||''}</td><td></td><td>${row[1]||''}</td><td>${row[2]||''}</td><td></td><td>${row[3]||''}</td></tr>`;
     });
   });
-  html += `</tbody></table><script>setTimeout(()=>window.print(),500);</script></body></html>`;
+  html += `</tbody></table><script>setTimeout(()=>window.print(),500);<\/script></body></html>`;
   
   const w = window.open('','_blank');
   w.document.write(html);
