@@ -112,8 +112,11 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
 .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 .photo-item{display:flex;flex-direction:column;gap:5px}
 .photo-slot{aspect-ratio:4/3;border:1.5px dashed var(--border);border-radius:var(--rs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:#fafbfc;position:relative;overflow:hidden}
-.photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.photo-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+.photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;cursor:pointer}
+.photo-slot input[type="file"]{display:none}
+.ps-btn-container { display: flex; gap: 10px; z-index: 2; }
+.ps-btn { padding: 8px 12px; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.ps-btn:active { background: #eee; }
 .ps-lbl{font-size:10px;color:var(--muted);font-weight:500}
 .ps-icon{font-size:22px;color:#c5cdd8}
 .photo-caption{font-size:11px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 7px;width:100%}
@@ -800,22 +803,40 @@ function addPhotoSlot(){
   const grid=ge('photo-grid');
   const item=document.createElement('div');item.className='photo-item';
   const slot=document.createElement('div');slot.className='photo-slot';slot.id='ps'+i;
-  const fi=document.createElement('input');fi.type='file';fi.accept='image/*';
-  fi.addEventListener('change',function(){
+  const fiCam=document.createElement('input');fiCam.type='file';fiCam.accept='image/*';fiCam.capture='environment';
+  const fiGal=document.createElement('input');fiGal.type='file';fiGal.accept='image/*';
+  
+  const handleFile = function(){
     if(this.files&&this.files[0]){
       const reader=new FileReader();
       reader.onload=e=>{
         photoData[i]=e.target.result;
-        slot.querySelector('.ps-icon').style.display='none';
-        slot.querySelector('.ps-lbl').style.display='none';
+        slot.querySelector('.ps-btn-container').style.display='none';
         const old=slot.querySelector('img');if(old)old.remove();
-        const img=document.createElement('img');img.src=e.target.result;slot.appendChild(img);
+        const img=document.createElement('img');img.src=e.target.result;
+        img.onclick = () => { 
+          slot.querySelector('.ps-btn-container').style.display='flex'; 
+          img.remove(); 
+          delete photoData[i]; 
+        };
+        slot.appendChild(img);
       };reader.readAsDataURL(this.files[0]);
     }
-  });
-  const icon=document.createElement('div');icon.className='ps-icon';icon.textContent='📷';
-  const lbl=document.createElement('div');lbl.className='ps-lbl';lbl.textContent='Photo '+i;
-  slot.appendChild(fi);slot.appendChild(icon);slot.appendChild(lbl);
+  };
+  fiCam.addEventListener('change', handleFile);
+  fiGal.addEventListener('change', handleFile);
+
+  const btnContainer = document.createElement('div'); btnContainer.className = 'ps-btn-container';
+  const btnCam = document.createElement('button'); btnCam.className = 'ps-btn'; btnCam.innerHTML = '📷 Camera';
+  const btnGal = document.createElement('button'); btnGal.className = 'ps-btn'; btnGal.innerHTML = '🖼️ Gallery';
+  
+  btnCam.onclick = (e) => { e.stopPropagation(); fiCam.click(); };
+  btnGal.onclick = (e) => { e.stopPropagation(); fiGal.click(); };
+  
+  btnContainer.appendChild(btnCam);
+  btnContainer.appendChild(btnGal);
+
+  slot.appendChild(fiCam);slot.appendChild(fiGal);slot.appendChild(btnContainer);
   const cap=document.createElement('input');cap.type='text';cap.className='photo-caption';cap.placeholder='Caption for photo '+i;cap.id='pc'+i;
   item.appendChild(slot);item.appendChild(cap);grid.appendChild(item);
 }
