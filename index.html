@@ -12,7 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -541,10 +541,13 @@ function renderHome(){
           <div class="proj-card-sub">${p.refId?p.refId+' · ':''}${p.loc||'No location set'}</div>
         </div>
       </div>
-      <div class="proj-card-meta">
+      <div class="proj-card-meta" style="margin-bottom: 10px;">
         <span class="mpill">${reports.length} DSR${reports.length!==1?'s':''}</span>
         ${last?`<span class="mpill green">Last: ${fmtDate(last)}</span>`:'<span class="mpill">No reports yet</span>'}
         ${p.client?`<span class="mpill">${p.client}</span>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="fab" style="margin-top:0;flex:1;background:var(--navy);font-size:12px;padding:10px" onclick="event.stopPropagation();openHistory('${p.id}')">📂 View All Reports (${reports.length})</button>
       </div>
     </div>`;
   }).join('');
@@ -786,7 +789,7 @@ function jumpTo(i){
   updateProg(); if(cur===8)updatePreview(); window.scrollTo(0,0);
   document.querySelectorAll('.nav-tab')[cur].scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'});
 }
-function navigate(d){ if(d===1 && cur===SECS.length-1) goHome(); else jumpTo(cur+d); }
+function navigate(d){ if(d===1 && cur===SECS.length-1) { saveDSR(); goHome(); } else jumpTo(cur+d); }
 function updateProg(){ge('prog-bar').innerHTML=SECS.map((_,i)=>`<div class="prog-seg ${i<cur?'done':i===cur?'active':''}"></div>`).join('')}
 
 // ─── TOAST ────────────────────────────────────────────────
@@ -1225,9 +1228,10 @@ function renderDashboard(){
   });
   
   const ctx = ge('dash-chart');
+  if(!ctx) return;
   if(dashChartObj) dashChartObj.destroy();
   if(!window.Chart){
-    ctx.outerHTML = '<div style="padding:20px;text-align:center;color:red">Failed to load charting library.</div>';
+    ctx.outerHTML = '<div id="dash-chart" style="padding:20px;text-align:center;color:red">Failed to load charting library. Please check your connection.</div>';
     return;
   }
   
