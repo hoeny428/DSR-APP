@@ -755,7 +755,7 @@ function jumpTo(i){
   updateProg(); if(cur===8)updatePreview(); window.scrollTo(0,0);
   document.querySelectorAll('.nav-tab')[cur].scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'});
 }
-function navigate(d){jumpTo(cur+d)}
+function navigate(d){ if(d===1 && cur===SECS.length-1) goHome(); else jumpTo(cur+d); }
 function updateProg(){ge('prog-bar').innerHTML=SECS.map((_,i)=>`<div class="prog-seg ${i<cur?'done':i===cur?'active':''}"></div>`).join('')}
 
 // ─── TOAST ────────────────────────────────────────────────
