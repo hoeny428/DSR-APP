@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -407,12 +408,42 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
     <div class="modal-handle"></div>
     <div class="modal-title" id="history-title">Project Reports</div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="fab" style="margin-top:0;flex:1" onclick="startNewDSR()">✏️ &nbsp;New DSR</button>
-      <button class="fab fab-accent" style="margin-top:0;flex:1" onclick="openProjectPlan()">📊 &nbsp;Project Plan</button>
+      <button class="fab" style="margin-top:0;flex:1" onclick="startNewDSR()">📝 &nbsp;New DSR</button>
+      <button class="fab fab-accent" style="margin-top:0;flex:1" onclick="openProjectPlan()">📅 &nbsp;Project Plan</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="fab" style="margin-top:0;flex:1;background:var(--navy);font-size:12px" onclick="exportLogsCSV(viewPid)">📥 &nbsp;CSV</button>
+      <button class="fab" style="margin-top:0;flex:1;background:var(--danger);font-size:12px" onclick="exportLogsPDF(viewPid)">📄 &nbsp;PDF</button>
+      <button class="fab" style="margin-top:0;flex:1;background:var(--success);font-size:12px" onclick="openDashboard(viewPid)">📊 &nbsp;Dashboard</button>
     </div>
     <div id="dsr-history-list"></div>
     <div class="modal-actions">
       <button class="btn-mc" onclick="closeModal('modal-history')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: DASHBOARD ===== -->
+<div class="screen" id="screen-dashboard">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeDashboard()" aria-label="Back">&#8592;</button>
+    <div class="topbar-info">
+      <h1 id="dash-topbar-title">Analytics Dashboard</h1>
+      <p id="dash-topbar-sub"></p>
+    </div>
+  </div>
+  <div class="section active" style="padding-top:12px;display:block">
+    <div class="card" style="text-align:center;background:var(--navy-light);border:none">
+      <div style="font-size:12px;color:var(--muted)">Total Cumulative Resources</div>
+      <div id="dash-total-res" style="font-size:32px;font-weight:700;color:var(--navy);margin-top:5px">0</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Manpower Trend</div>
+      <div style="display:flex;gap:5px;margin-bottom:10px">
+        <button class="mpill active" id="btn-dash-week" onclick="setDashRange('week')">Weekly</button>
+        <button class="mpill" id="btn-dash-month" onclick="setDashRange('month')">Monthly</button>
+      </div>
+      <div style="width:100%;height:300px;position:relative"><canvas id="dash-chart"></canvas></div>
     </div>
   </div>
 </div>
@@ -1066,6 +1097,149 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('Service Worker registered', reg))
       .catch(err => console.error('Service Worker registration failed', err));
+  });
+}
+
+// ─── EXPORT & DASHBOARD LOGIC ────────────────────────────────
+function exportLogsCSV(pid){
+  const reports = getProjReports(pid).reverse();
+  if(!reports.length){ toast('No reports to export'); return; }
+  let csv = 'Date,Type,Item / Trade,Planned,Actual / Qty,Area / Zone,OT Hrs,Notes / Issues\n';
+  reports.forEach(r => {
+    const d = r.date;
+    (r.data.manpower||[]).forEach(row => {
+      csv += `"${d}","Manpower","${row[0]||''}","${row[1]||''}","${row[2]||''}","${row[3]||''}","${row[4]||''}","${row[5]||''}"\n`;
+    });
+    (r.data.equipment||[]).forEach(row => {
+      csv += `"${d}","Equipment","${row[0]||''}","","${row[1]||''}","${row[2]||''}","","${row[3]||''}"\n`;
+    });
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Logs_${pid}.csv`;
+  a.click();
+}
+
+function exportLogsPDF(pid){
+  const reports = getProjReports(pid).reverse();
+  if(!reports.length){ toast('No reports to export'); return; }
+  let html = `<html><head><title>Logs - ${pid}</title><style>
+    body{font-family:sans-serif;padding:20px;color:#333}
+    h1{font-size:20px;border-bottom:2px solid #000;padding-bottom:10px}
+    table{width:100%;border-collapse:collapse;margin-top:20px;font-size:12px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f5f5f5}
+    .type-mp{background:#e8f4f8}
+    .type-eq{background:#fdf2e9}
+  </style></head><body>`;
+  html += `<h1>Resource Logs</h1>`;
+  html += `<table><thead><tr><th>Date</th><th>Type</th><th>Item / Trade</th><th>Planned</th><th>Actual / Qty</th><th>Zone</th><th>OT Hrs</th><th>Notes</th></tr></thead><tbody>`;
+  
+  reports.forEach(r => {
+    const d = r.date;
+    (r.data.manpower||[]).forEach(row => {
+      html += `<tr class="type-mp"><td>${d}</td><td>Manpower</td><td>${row[0]||''}</td><td>${row[1]||''}</td><td>${row[2]||''}</td><td>${row[3]||''}</td><td>${row[4]||''}</td><td>${row[5]||''}</td></tr>`;
+    });
+    (r.data.equipment||[]).forEach(row => {
+      html += `<tr class="type-eq"><td>${d}</td><td>Equipment</td><td>${row[0]||''}</td><td></td><td>${row[1]||''}</td><td>${row[2]||''}</td><td></td><td>${row[3]||''}</td></tr>`;
+    });
+  });
+  html += `</tbody></table><script>setTimeout(()=>window.print(),500);</script></body></html>`;
+  
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+let dashChartObj = null;
+let dashData = [];
+let dashRange = 'week'; 
+
+function openDashboard(pid){
+  closeModal('modal-history');
+  const proj=lp().find(p=>p.id===pid);
+  document.getElementById('dash-topbar-sub').textContent=proj?proj.name:'';
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-plan').classList.remove('active');
+  document.getElementById('screen-dsr').classList.remove('active');
+  document.getElementById('screen-dashboard').classList.add('active');
+  
+  dashData = getProjReports(pid).reverse();
+  setDashRange('week');
+}
+
+function closeDashboard(){
+  document.getElementById('screen-dashboard').classList.remove('active');
+  document.getElementById('screen-home').classList.add('active');
+}
+
+function getWeekStr(dStr){
+  const d = new Date(dStr);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + yearStart.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + weekNo;
+}
+
+function getMonthStr(dStr){ return dStr.substring(0, 7); }
+
+function setDashRange(range){
+  dashRange = range;
+  ge('btn-dash-week').classList.toggle('active', range === 'week');
+  ge('btn-dash-month').classList.toggle('active', range === 'month');
+  renderDashboard();
+}
+
+function renderDashboard(){
+  let totalRes = 0;
+  const groups = {}; 
+  const contractors = new Set();
+  
+  dashData.forEach(r => {
+    const timeKey = dashRange === 'week' ? getWeekStr(r.date) : getMonthStr(r.date);
+    if(!groups[timeKey]) groups[timeKey] = {};
+    
+    (r.data.manpower||[]).forEach(row => {
+      const contractor = (row[0] || 'Unknown').trim();
+      const actual = parseInt(row[2]) || 0;
+      contractors.add(contractor);
+      
+      if(!groups[timeKey][contractor]) groups[timeKey][contractor] = 0;
+      groups[timeKey][contractor] += actual;
+      totalRes += actual;
+    });
+  });
+  
+  ge('dash-total-res').textContent = totalRes;
+  
+  const labels = Object.keys(groups).sort();
+  const datasets = Array.from(contractors).map((c, i) => {
+    const hue = (i * 137.508) % 360; 
+    return {
+      label: c,
+      data: labels.map(l => groups[l][c] || 0),
+      backgroundColor: `hsl(${hue}, 70%, 50%)`,
+      stack: 'Stack 0'
+    };
+  });
+  
+  const ctx = ge('dash-chart');
+  if(dashChartObj) dashChartObj.destroy();
+  if(!window.Chart){
+    ctx.outerHTML = '<div style="padding:20px;text-align:center;color:red">Failed to load charting library.</div>';
+    return;
+  }
+  
+  dashChartObj = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+    }
   });
 }
 </script>
