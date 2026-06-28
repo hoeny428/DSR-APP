@@ -112,13 +112,14 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
 .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 .photo-item{display:flex;flex-direction:column;gap:5px}
 .photo-slot{aspect-ratio:4/3;border:1.5px dashed var(--border);border-radius:var(--rs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:#fafbfc;position:relative;overflow:hidden}
-.photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;cursor:pointer}
 .photo-slot input[type="file"]{display:none}
-.ps-btn-container { display: flex; gap: 10px; z-index: 2; }
-.ps-btn { padding: 8px 12px; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.ps-btn:active { background: #eee; }
-.ps-lbl{font-size:10px;color:var(--muted);font-weight:500}
+.ps-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-top:4px}
 .ps-icon{font-size:22px;color:#c5cdd8}
+.ps-dropdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 10; padding: 5px; width: 80%; }
+.ps-dropdown button { padding: 10px; background: transparent; border: none; border-bottom: 1px solid #eee; font-size: 14px; text-align: center; cursor: pointer; color: #333; }
+.ps-dropdown button:last-child { border-bottom: none; }
+.ps-dropdown button:active { background: #f0f0f0; }
+.ps-default { display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
 .photo-caption{font-size:11px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 7px;width:100%}
 .email-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .email-tag{display:inline-flex;align-items:center;gap:5px;background:var(--navy-light);border:1px solid #c3d3e8;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--navy)}
@@ -811,11 +812,12 @@ function addPhotoSlot(){
       const reader=new FileReader();
       reader.onload=e=>{
         photoData[i]=e.target.result;
-        slot.querySelector('.ps-btn-container').style.display='none';
+        const oldDef=slot.querySelector('.ps-default');if(oldDef)oldDef.style.display='none';
         const old=slot.querySelector('img');if(old)old.remove();
         const img=document.createElement('img');img.src=e.target.result;
-        img.onclick = () => { 
-          slot.querySelector('.ps-btn-container').style.display='flex'; 
+        img.onclick = (ev) => { 
+          ev.stopPropagation();
+          const d=slot.querySelector('.ps-default');if(d)d.style.display='flex'; 
           img.remove(); 
           delete photoData[i]; 
         };
@@ -826,17 +828,26 @@ function addPhotoSlot(){
   fiCam.addEventListener('change', handleFile);
   fiGal.addEventListener('change', handleFile);
 
-  const btnContainer = document.createElement('div'); btnContainer.className = 'ps-btn-container';
-  const btnCam = document.createElement('button'); btnCam.className = 'ps-btn'; btnCam.innerHTML = '📷 Camera';
-  const btnGal = document.createElement('button'); btnGal.className = 'ps-btn'; btnGal.innerHTML = '🖼️ Gallery';
-  
-  btnCam.onclick = (e) => { e.stopPropagation(); fiCam.click(); };
-  btnGal.onclick = (e) => { e.stopPropagation(); fiGal.click(); };
-  
-  btnContainer.appendChild(btnCam);
-  btnContainer.appendChild(btnGal);
+  const defState = document.createElement('div'); defState.className = 'ps-default';
+  const icon = document.createElement('div'); icon.className = 'ps-icon'; icon.textContent = '📷';
+  const lbl = document.createElement('div'); lbl.className = 'ps-lbl'; lbl.textContent = 'Add Photo ' + i;
+  defState.appendChild(icon); defState.appendChild(lbl);
 
-  slot.appendChild(fiCam);slot.appendChild(fiGal);slot.appendChild(btnContainer);
+  const dropdown = document.createElement('div'); dropdown.className = 'ps-dropdown';
+  const btnCam = document.createElement('button'); btnCam.innerHTML = '📷 Camera';
+  const btnGal = document.createElement('button'); btnGal.innerHTML = '🖼️ Gallery';
+  
+  btnCam.onclick = (e) => { e.stopPropagation(); dropdown.style.display = 'none'; fiCam.click(); };
+  btnGal.onclick = (e) => { e.stopPropagation(); dropdown.style.display = 'none'; fiGal.click(); };
+  dropdown.appendChild(btnCam); dropdown.appendChild(btnGal);
+
+  slot.onclick = (e) => {
+    if(!photoData[i]) {
+      dropdown.style.display = dropdown.style.display === 'flex' ? 'none' : 'flex';
+    }
+  };
+
+  slot.appendChild(fiCam);slot.appendChild(fiGal);slot.appendChild(defState);slot.appendChild(dropdown);
   const cap=document.createElement('input');cap.type='text';cap.className='photo-caption';cap.placeholder='Caption for photo '+i;cap.id='pc'+i;
   item.appendChild(slot);item.appendChild(cap);grid.appendChild(item);
 }
