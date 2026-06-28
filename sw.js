@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dsr-cache-v4';
+const CACHE_NAME = 'dsr-cache-v5';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -6,7 +6,8 @@ const urlsToCache = [
   './app-icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js'
 ];
 
 // Install event: cache all necessary files
