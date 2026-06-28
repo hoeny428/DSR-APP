@@ -388,7 +388,7 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
     <label>Main Contractor</label><input type="text" id="np-contractor" placeholder="Main contractor name">
     <label>Consultant / Designer</label><input type="text" id="np-consultant" placeholder="Consultant / designer name">
     <label>Prepared by (default)</label><input type="text" id="np-preparedby" placeholder="e.g. Manjit Singh / Project Engineer">
-    <label>Reviewed by (default)</label><input type="text" id="np-reviewedby" placeholder="e.g. Doris / PM">
+    <label>Reviewed by (default)</label><input type="text" id="np-reviewedby" placeholder="e.g. Name / PM">
     <label>Default working hours</label><input type="text" id="np-hours" placeholder="08:00 - 17:00">
     <div class="modal-actions">
       <button class="btn-mc" onclick="closeModal('modal-new-project')">Cancel</button>
@@ -402,10 +402,45 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="history-title">Project Reports</div>
-    <button class="fab" style="margin-bottom:14px" onclick="startNewDSR()">✏️ &nbsp;New DSR for Today</button>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="fab" style="margin-top:0;flex:1" onclick="startNewDSR()">✏️ &nbsp;New DSR</button>
+      <button class="fab fab-accent" style="margin-top:0;flex:1" onclick="openProjectPlan()">📊 &nbsp;Project Plan</button>
+    </div>
     <div id="dsr-history-list"></div>
     <div class="modal-actions">
       <button class="btn-mc" onclick="closeModal('modal-history')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: PROJECT PLAN ===== -->
+<div class="screen" id="screen-plan">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()" aria-label="Back">&#8592;</button>
+    <div class="topbar-info">
+      <h1 id="plan-topbar-title">Project Plan</h1>
+      <p id="plan-topbar-sub">Project Management</p>
+    </div>
+  </div>
+  <div class="section active" style="padding-top:12px;display:block">
+    <div class="card">
+      <div class="card-title">Project Tasks</div>
+      <div class="table-scroll">
+        <table class="dt" id="plan-table">
+          <thead><tr><th>Task Name</th><th>Assignee</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Progress (%)</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="plan-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addPlanRow()">+ Add Task</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Import & Export</div>
+      <label class="export-btn btn-excel" style="cursor:pointer;margin-bottom:8px">
+        <span style="display:flex;align-items:center;justify-content:center;width:100%">📥 Import from Excel</span>
+        <input type="file" id="import-plan-file" accept=".xlsx, .xls" style="display:none" onchange="importPlanExcel(event)">
+      </label>
+      <button class="export-btn btn-excel" onclick="exportPlanExcel()">📤 Download as Excel</button>
+      <button class="export-btn btn-save" onclick="saveProjectPlan()">💾 Save Project Plan</button>
     </div>
   </div>
 </div>
@@ -482,6 +517,8 @@ function renderHome(){
 }
 function goHome(){
   document.getElementById('screen-dsr').classList.remove('active');
+  const planScreen = document.getElementById('screen-plan');
+  if(planScreen) planScreen.classList.remove('active');
   document.getElementById('screen-home').classList.add('active');
   renderHome();
 }
@@ -733,6 +770,7 @@ const TPLS={
   materials:()=>`<td>${inp('Item',90)}</td><td>${inp('Required for',90)}</td><td>${di()}</td><td>${inp('Qty / desc',80)}</td><td>${sel('OK','Delay')}</td><td>${inp('Impact',90)}</td><td>${inp('Owner',70)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
   issues:()=>`<td>${sel('Issue','Risk','Action')}</td><td>${inp('Description',130)}</td><td>${inp('Time/Cost/Quality/HSE',100)}</td><td>${inp('Owner',70)}</td><td>${di()}</td><td>${sel('Open','In Progress','Closed')}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
   tomorrow:()=>`<td>${inp('Zone',80)}</td><td>${inp('Activity',120)}</td><td>${inp('Target qty',80)}</td><td>${inp('Crew/trade',80)}</td><td>${inp('Notes',90)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  plan:()=>`<td>${inp('Task name',120)}</td><td>${inp('Assignee',80)}</td><td>${di()}</td><td>${di()}</td><td>${sel('Not Started','In Progress','Completed','On Hold')}</td><td>${num('0')}</td><td>${inp('Notes',100)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`
 };
 function addRow(type){const tr=document.createElement('tr');tr.innerHTML=TPLS[type]();ge(type+'-body').appendChild(tr)}
 function addRowWithData(type,vals){
@@ -820,6 +858,73 @@ function updatePreview(){
 // ─── MODAL HELPERS ────────────────────────────────────────
 function showModal(id){ge(id).classList.remove('hidden')}
 function closeModal(id){ge(id).classList.add('hidden')}
+
+// ─── PROJECT PLAN ─────────────────────────────────────────
+function openProjectPlan(){
+  closeModal('modal-history');
+  activePid=viewPid;
+  const proj=lp().find(p=>p.id===activePid);
+  document.getElementById('plan-topbar-sub').textContent=proj?proj.name:'';
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-dsr').classList.remove('active');
+  document.getElementById('screen-plan').classList.add('active');
+  ge('plan-body').innerHTML='';
+  if(proj && proj.plan && proj.plan.length){
+    proj.plan.forEach(r=>addRowWithData('plan',r));
+  }else{
+    addRow('plan'); addRow('plan'); addRow('plan');
+  }
+}
+function saveProjectPlan(){
+  const rows = collectRows('plan-body');
+  const arr = lp();
+  const idx = arr.findIndex(p=>p.id===activePid);
+  if(idx>=0){
+    arr[idx].plan = rows;
+    sp(arr);
+    toast('Project plan saved ✓');
+  }
+}
+function addPlanRow(){addRow('plan')}
+function importPlanExcel(e){
+  const file = e.target.files[0];
+  if(!file)return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const data = evt.target.result;
+    const wb = XLSX.read(data, {type: 'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+    if(json.length > 1){
+      ge('plan-body').innerHTML='';
+      for(let i=1; i<json.length; i++){
+        const row = json[i];
+        if(!row.length) continue;
+        const vals = [row[0]||'', row[1]||'', row[2]||'', row[3]||'', row[4]||'Not Started', row[5]||'', row[6]||''];
+        addRowWithData('plan', vals);
+      }
+      toast('Imported '+ (json.length-1) +' tasks');
+    }
+  };
+  reader.readAsBinaryString(file);
+  e.target.value = '';
+}
+function exportPlanExcel(){
+  try {
+    const proj = lp().find(p=>p.id===activePid);
+    const rows = collectRows('plan-body');
+    const wb = XLSX.utils.book_new();
+    const data = [['Task Name', 'Assignee', 'Start Date', 'End Date', 'Status', 'Progress (%)', 'Notes']];
+    rows.forEach(r=>data.push(r));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=[25,15,15,15,15,15,30].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, ws, 'Project Plan');
+    XLSX.writeFile(wb, 'Plan_' + (proj?proj.name:'Project') + '.xlsx');
+    toast('Excel downloaded');
+  } catch(e) {
+    console.error(e); toast('Export failed');
+  }
+}
 
 // ─── EXPORT: EXCEL ────────────────────────────────────────
 function exportExcel(){

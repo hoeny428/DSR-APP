@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.hoeny428.twa",
+        "sha256_cert_fingerprints": ["16:D4:07:BE:B0:A5:C3:60:2E:78:73:0C:E8:AD:6E:C3:9C:89:DF:E8:07:80:91:F5:E3:FA:EB:FD:12:00:62:A1"]
+      }
+    }]
