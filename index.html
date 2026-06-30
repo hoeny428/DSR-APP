@@ -692,6 +692,8 @@ function delReport(pid,date){const a=lr();if(a[pid])a[pid]=a[pid].filter(r=>r.da
 const SECS=['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
 let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
 let currentTab = 'analytics';
+let dashChartObj = null;
+let dashMachineryChartObj = null;
 
 function initDummyData() {
   const projects = lp();
@@ -1523,8 +1525,6 @@ function exportLogsPDF(pid){
   w.document.close();
 }
 
-let dashChartObj = null;
-let dashMachineryChartObj = null;
 
 function renderGlobalDashboard(){
   const projects = lp();
