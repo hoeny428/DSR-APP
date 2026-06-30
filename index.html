@@ -693,6 +693,83 @@ const SECS=['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
 let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
 let currentTab = 'analytics';
 
+function initDummyData() {
+  const projects = lp();
+  if(projects.length > 0) return; // Only run if empty
+
+  // 1. Create 5 Personnel
+  const dummyPersonnel = [
+    { name: "John Doe", role: "Project Manager", email: "john.doe@buildcorp.com", phone: "123-456-7890" },
+    { name: "Jane Smith", role: "Site Engineer", email: "jane.smith@astra.com", phone: "123-456-7891" },
+    { name: "Mike Johnson", role: "HSE Officer", email: "mike.j@pillar.com", phone: "123-456-7892" },
+    { name: "Emily Brown", role: "QA/QC", email: "emily.b@summit.com", phone: "123-456-7893" },
+    { name: "Chris Wilson", role: "Foreman", email: "chris.w@delta.com", phone: "123-456-7894" }
+  ];
+  spe(dummyPersonnel);
+
+  // 2. Create 1 Project
+  const dummyProject = {
+    id: 'proj_dummy_1',
+    name: "City Center Highrise",
+    refId: "PRJ-2026-001",
+    client: "Global Estates",
+    loc: "Downtown Core",
+    contractor: "BuildCorp",
+    consultant: "Astra Projects",
+    preparedBy: "Jane Smith",
+    reviewedBy: "John Doe",
+    hours: "08:00 - 17:00",
+    emails: ["john.doe@buildcorp.com"],
+    createdAt: new Date().toISOString()
+  };
+  sp([dummyProject]);
+
+  // 3. Create 5-6 Daily Reports
+  const companies = ["BuildCorp", "Astra Projects", "Pillar Construct", "Summit Infra", "Delta Builders"];
+  const machineries = ["Excavator", "Tower Crane", "Dump Truck", "Bulldozer", "Concrete Mixer"];
+  
+  const allReports = {};
+  allReports[dummyProject.id] = [];
+
+  for(let i=5; i>=0; i--) {
+    let d = new Date();
+    d.setDate(d.getDate() - i);
+    let dateStr = d.toISOString().split('T')[0];
+    
+    let manpowerData = [];
+    let equipmentData = [];
+    
+    companies.forEach(comp => {
+      let planned = Math.floor(Math.random() * 50) + 10;
+      let actual = Math.floor(planned * (0.8 + Math.random() * 0.3));
+      manpowerData.push([comp, planned, actual, "All Zones", "0", "Normal Ops"]);
+    });
+
+    machineries.forEach(mach => {
+      let qty = Math.floor(Math.random() * 5) + 1;
+      equipmentData.push([mach, qty, "Zone A", "None"]);
+    });
+
+    let report = {
+      date: dateStr,
+      savedAt: new Date().toISOString(),
+      data: {
+        header: {
+          proj_name: dummyProject.name,
+          proj_loc: dummyProject.loc,
+          proj_date: dateStr,
+          proj_shift: "Day"
+        },
+        manpower: manpowerData,
+        equipment: equipmentData
+      }
+    };
+    allReports[dummyProject.id].push(report);
+  }
+  
+  sr(allReports);
+}
+
 // ─── INIT ──────────────────────────────────────────────────
 (function(){
   document.getElementById('today-badge').textContent=fmtDate(today());
@@ -700,6 +777,7 @@ let currentTab = 'analytics';
   document.getElementById('new-email').addEventListener('keydown',e=>{if(e.key==='Enter')addEmail()});
   document.getElementById('np-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProject()});
   document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden')}));
+  initDummyData();
   switchMainTab('analytics');
   checkSetup();
 })();

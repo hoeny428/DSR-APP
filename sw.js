@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dsr-cache-v7';
+const CACHE_NAME = 'dsr-cache-v8';
 const urlsToCache = [
   './index.html',
   './manifest.json',
