@@ -108,8 +108,8 @@ function initDummyData() {
   document.getElementById('new-email').addEventListener('keydown',e=>{if(e.key==='Enter')addEmail()});
   document.getElementById('np-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProject()});
   document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden')}));
-  switchMainTab('analytics');
   initDummyData();
+  switchMainTab('analytics');
   checkSetup();
 })();
 
