@@ -320,10 +320,10 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
       <div class="card-title">Manpower</div>
       <div class="table-scroll">
         <table class="dt" id="manpower-table">
-          <thead><tr><th>Trade / Company</th><th>Planned</th><th>Actual</th><th>Area / Zone</th><th>OT Hrs</th><th>Notes</th><th></th></tr></thead>
+          <thead><tr><th>Contractor</th><th>Trade / Type</th><th>Planned</th><th>Actual</th><th>Area / Zone</th><th>OT Hrs</th><th>Notes</th><th></th></tr></thead>
           <tbody id="manpower-body"></tbody>
           <tfoot><tr>
-            <td style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
+            <td colspan="2" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
             <td id="mp-tp" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
             <td id="mp-ta" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
             <td colspan="4" style="background:var(--navy-light)"></td>
@@ -515,7 +515,13 @@ table.dt tr:nth-child(even) td{background:#fafbfc}
       <div id="dash-total-res" style="font-size:32px;font-weight:700;color:var(--navy);margin-top:5px">0</div>
     </div>
     <div class="card">
-      <div class="card-title">Manpower by Contractor</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-title" style="margin:0">Manpower Analytics</div>
+        <select id="mp-chart-filter" style="font-size:12px;padding:4px;border:1px solid var(--border);border-radius:4px;" onchange="renderGlobalDashboard()">
+          <option value="contractor">By Contractor</option>
+          <option value="type">By Type</option>
+        </select>
+      </div>
       <div style="width:100%;height:300px;position:relative"><canvas id="dash-chart"></canvas></div>
     </div>
     <div class="card">
@@ -727,7 +733,8 @@ function initDummyData() {
   sp([dummyProject]);
 
   // 3. Create 5-6 Daily Reports
-  const companies = ["BuildCorp", "Astra Projects", "Pillar Construct", "Summit Infra", "Delta Builders"];
+  const contractors = ["BuildCorp", "Astra Projects", "Pillar Construct", "Summit Infra", "Delta Builders"];
+  const trades = ["Carpenter", "Plumber", "Electrician", "Mason", "Laborer", "Steel Fixer", "Painter"];
   const machineries = ["Excavator", "Tower Crane", "Dump Truck", "Bulldozer", "Concrete Mixer"];
   
   const allReports = {};
@@ -741,10 +748,11 @@ function initDummyData() {
     let manpowerData = [];
     let equipmentData = [];
     
-    companies.forEach(comp => {
+    contractors.forEach(comp => {
+      let trade = trades[Math.floor(Math.random() * trades.length)];
       let planned = Math.floor(Math.random() * 50) + 10;
       let actual = Math.floor(planned * (0.8 + Math.random() * 0.3));
-      manpowerData.push([comp, planned, actual, "All Zones", "0", "Normal Ops"]);
+      manpowerData.push([comp, trade, planned, actual, "All Zones", "0", "Normal Ops"]);
     });
 
     machineries.forEach(mach => {
@@ -866,7 +874,7 @@ function renderGlobalReports() {
   
   list.innerHTML = flat.map(r => {
     let mpCount = 0;
-    (r.data.manpower||[]).forEach(row => mpCount += Number(row[2]||0));
+    (r.data.manpower||[]).forEach(row => mpCount += Number(row[3]||0));
     return `
     <div class="dsr-item">
       <div class="dsr-item-inner" onclick="openExistingDSR('${r.pid}', '${r.date}')">
@@ -1162,7 +1170,7 @@ function num(ph){return`<input type="number" placeholder="${ph}" min="0" style="
 function di(){return`<input type="date" style="min-width:110px">`}
 function sel(...o){return`<select style="min-width:80px">${o.map(x=>`<option>${x}</option>`).join('')}</select>`}
 const TPLS={
-  manpower:()=>`<td>${inp('Company / trade',120)}</td><td>${num('0')}</td><td>${num('0')}</td><td>${inp('Zone',70)}</td><td>${num('0')}</td><td>${inp('Notes',80)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
+  manpower:()=>`<td>${inp('Contractor',110)}</td><td>${inp('Trade',90)}</td><td>${num('0')}</td><td>${num('0')}</td><td>${inp('Zone',70)}</td><td>${num('0')}</td><td>${inp('Notes',80)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
   equipment:()=>`<td>${inp('Equipment name',110)}</td><td>${num('0')}</td><td>${inp('Zone',70)}</td><td>${inp('Downtime / issue',110)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
   progress:()=>`<td>${inp('Zone',80)}</td><td>${inp('Activity',120)}</td><td>${inp('Planned',60)}</td><td>${inp('Actual + units',80)}</td><td>${inp('Remarks',110)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
   materials:()=>`<td>${inp('Item',90)}</td><td>${inp('Required for',90)}</td><td>${di()}</td><td>${inp('Qty / desc',80)}</td><td>${sel('OK','Delay')}</td><td>${inp('Impact',90)}</td><td>${inp('Owner',70)}</td><td><button class="del-btn" onclick="delRow(this)">x</button></td>`,
@@ -1378,9 +1386,13 @@ function exportExcel(){
     rows.push([{v:'EXECUTIVE SUMMARY',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
     rows.push([B('1) Key achieved today'),T(d.summary.exec1)]);rows.push([B('2) Main blocker / delay'),T(d.summary.exec2)]);rows.push([B('3) Critical note / escalation'),T(d.summary.exec3)]);rows.push([]);
     rows.push([{v:'MANPOWER & PLANT',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
-    rows.push(['Trade / Company','Planned','Actual','Area/Zone','OT Hours','Notes','Equipment','Qty','Area/Zone','Downtime'].map(H));
+    rows.push(['Contractor','Trade','Planned','Actual','Area/Zone','OT Hours','Notes','Equipment','Qty','Area/Zone','Downtime'].map(H));
     const mm=Math.max(d.manpower.length,d.equipment.length);
-    for(let i=0;i<mm;i++){const mp=d.manpower[i]||['','','','','',''];const eq=d.equipment[i]||['','','',''];rows.push([T(mp[0]),T(mp[1]),T(mp[2]),T(mp[3]),T(mp[4]),T(mp[5]),T(eq[0]),T(eq[1]),T(eq[2]),T(eq[3])]);}
+    for(let i=0;i<mm;i++){
+      const mp=d.manpower[i]||['','','','','','',''];
+      const eq=d.equipment[i]||['','','',''];
+      rows.push([T(mp[0]),T(mp[1]),T(mp[2]),T(mp[3]),T(mp[4]),T(mp[5]),T(mp[6]),T(eq[0]),T(eq[1]),T(eq[2]),T(eq[3])]);
+    }
     rows.push([]);
     rows.push([{v:'WORK PROGRESS TODAY',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:navy}}}}]);
     rows.push(['Area/Zone','Activity','Planned Today','Actual Today','Remarks'].map(H));
@@ -1434,7 +1446,7 @@ function exportPDF(){
     doc.setFontSize(8);doc.setFont('helvetica','normal');
     [['1) Key achieved today',d.summary.exec1],['2) Main blocker / delay',d.summary.exec2],['3) Critical note / escalation',d.summary.exec3]].forEach(([k,v])=>{if(!v)return;doc.setFont('helvetica','bold');doc.setTextColor(...navy);doc.text(k+':',M+2,y);y+=5;doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);doc.splitTextToSize(v,PW-2*M-4).forEach(l=>{doc.text(l,M+4,y);y+=4.5;});y+=2;});
     sh('MANPOWER & PLANT');
-    if(d.manpower.length){doc.autoTable({startY:y,head:[['Trade / Company','Planned','Actual','Area/Zone','OT Hours','Notes'].map(x=>x.toUpperCase())],body:d.manpower.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
+    if(d.manpower.length){doc.autoTable({startY:y,head:[['Contractor','Trade','Planned','Actual','Area/Zone','OT','Notes'].map(x=>x.toUpperCase())],body:d.manpower.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5],r[6]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
     if(d.equipment.length){doc.autoTable({startY:y,head:[['Equipment','Qty','Area/Zone','Downtime / Issue'].map(x=>x.toUpperCase())],body:d.equipment.map(r=>[r[0],r[1],r[2],r[3]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
     sh('WORK PROGRESS TODAY (MEASURED)');
     if(d.progress.length){doc.autoTable({startY:y,head:[['Area/Zone','Activity','Planned Today','Actual Today','Remarks'].map(x=>x.toUpperCase())],body:d.progress.map(r=>[r[0],r[1],r[2],r[3],r[4]]),styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,0,0],textColor:[255,255,255],fontStyle:'bold'},margin:{left:M,right:M},theme:'grid'});y=doc.lastAutoTable.finalY+5;}
@@ -1512,7 +1524,15 @@ function exportLogsPDF(pid){
   reports.forEach(r => {
     const d = r.date;
     (r.data.manpower||[]).forEach(row => {
-      html += `<tr class="type-mp"><td>${d}</td><td>Manpower</td><td>${row[0]||''}</td><td>${row[1]||''}</td><td>${row[2]||''}</td><td>${row[3]||''}</td><td>${row[4]||''}</td><td>${row[5]||''}</td></tr>`;
+      let isOld = row.length === 6;
+      let comp = row[0]||'';
+      let trade = isOld ? '-' : (row[1]||'');
+      let p = isOld ? (row[1]||'') : (row[2]||'');
+      let a = isOld ? (row[2]||'') : (row[3]||'');
+      let z = isOld ? (row[3]||'') : (row[4]||'');
+      let ot = isOld ? (row[4]||'') : (row[5]||'');
+      let notes = isOld ? (row[5]||'') : (row[6]||'');
+      html += `<tr class="type-mp"><td>${d}</td><td>Manpower</td><td>${comp} (${trade})</td><td>${p}</td><td>${a}</td><td>${z}</td><td>${ot}</td><td>${notes}</td></tr>`;
     });
     (r.data.equipment||[]).forEach(row => {
       html += `<tr class="type-eq"><td>${d}</td><td>Equipment</td><td>${row[0]||''}</td><td></td><td>${row[1]||''}</td><td>${row[2]||''}</td><td></td><td>${row[3]||''}</td></tr>`;
@@ -1537,22 +1557,29 @@ function renderGlobalDashboard(){
   
   let totalActual = 0;
   let totalPlanned = 0;
-  let contractorData = {}; // { 'Contractor Name': actualCount }
+  let mpFilter = document.getElementById('mp-chart-filter') ? document.getElementById('mp-chart-filter').value : 'contractor';
+  let contractorData = {}; 
   
   projects.forEach(p => {
     const rpts = allReports[p.id] || [];
     rpts.forEach(r => {
       (r.data.manpower||[]).forEach(row => {
-        let planned = Number(row[1]) || 0;
-        let actual = Number(row[2]) || 0;
+        let isOld = row.length === 6;
+        let planned = Number(isOld ? row[1] : row[2]) || 0;
+        let actual = Number(isOld ? row[2] : row[3]) || 0;
+        
         let contractor = row[0] ? String(row[0]).trim() : 'Unknown';
+        let trade = isOld ? 'Unknown' : (row[1] ? String(row[1]).trim() : 'Unknown');
+        
         if(contractor === '') contractor = 'Unknown';
+        if(trade === '') trade = 'Unknown';
         
         totalPlanned += planned;
         totalActual += actual;
         
-        if(!contractorData[contractor]) contractorData[contractor] = 0;
-        contractorData[contractor] += actual;
+        let key = mpFilter === 'contractor' ? contractor : trade;
+        if(!contractorData[key]) contractorData[key] = 0;
+        contractorData[key] += actual;
       });
     });
   });
@@ -1584,7 +1611,7 @@ function renderGlobalDashboard(){
     data: {
       labels: labels.length ? labels : ['No Data'],
       datasets: [{
-        label: 'Total Manpower',
+        label: mpFilter === 'contractor' ? 'Total Manpower by Contractor' : 'Total Manpower by Type',
         data: data.length ? data : [0],
         backgroundColor: bgColors,
         borderRadius: 4
