@@ -95,7 +95,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;margin-top:10px}
 label:first-of-type{margin-top:0}
-input[type="text"],input[type="email"],input[type="number"],input[type="date"],select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+input[type="text"],input[type="email"],input[type="number"],input[type="date"],select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none;}
 input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,58,92,.1)}
 textarea{resize:vertical;min-height:64px;line-height:1.5}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -733,8 +733,12 @@ function initDummyData() {
   sp([dummyProject]);
 
   // 3. Create 5-6 Daily Reports
-  const contractors = ["BuildCorp", "Astra Projects", "Pillar Construct", "Summit Infra", "Delta Builders"];
-  const trades = ["Carpenter", "Plumber", "Electrician", "Mason", "Laborer", "Steel Fixer", "Painter"];
+  const contractors = [
+    { name: "BuildCorp (Civil)", trades: ["Mason", "Helper", "Carpenter", "Steel Fixer", "Laborer"] },
+    { name: "Astra MEP", trades: ["AC Technician", "Electrician", "Plumber", "Helper"] },
+    { name: "Delta Finishes", trades: ["Painter", "Gypsum Worker", "Helper", "Cleaner"] },
+    { name: "Summit Earthworks", trades: ["Heavy Operator", "Laborer", "Surveyor"] }
+  ];
   const machineries = ["Excavator", "Tower Crane", "Dump Truck", "Bulldozer", "Concrete Mixer"];
   
   const allReports = {};
@@ -748,11 +752,11 @@ function initDummyData() {
     let manpowerData = [];
     let equipmentData = [];
     
-    contractors.forEach(comp => {
-      let trade = trades[Math.floor(Math.random() * trades.length)];
+    contractors.forEach(compObj => {
+      let trade = compObj.trades[Math.floor(Math.random() * compObj.trades.length)];
       let planned = Math.floor(Math.random() * 50) + 10;
       let actual = Math.floor(planned * (0.8 + Math.random() * 0.3));
-      manpowerData.push([comp, trade, planned, actual, "All Zones", "0", "Normal Ops"]);
+      manpowerData.push([compObj.name, trade, planned, actual, "All Zones", "0", "Normal Ops"]);
     });
 
     machineries.forEach(mach => {
