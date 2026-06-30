@@ -1,674 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>DSR App</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DSR App">
-<link rel="apple-touch-icon" href="app-icon-192.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#000000;--navy-dark:#111111;--navy-light:#f3f4f6;
-  --accent:#222222;--bg:#f9fafb;--surface:#ffffff;--border:#e5e7eb;
-  --text:#111827;--muted:#6b7280;--danger:#b91c1c;--success:#166534;
-  --sbg:#dcfce7;--dbg:#fee2e2;--r:10px;--rs:6px;
-}
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
-.screen{display:none}.screen.active{display:block}
 
-/* HOME */
-.home-topbar{background:var(--navy);padding:20px 16px 16px;color:#fff}
-.home-topbar-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.logo-box{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-.home-topbar h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
-.home-topbar p{font-size:12px;opacity:.6;margin-top:2px}
-.home-body{padding:12px 12px 80px}
-.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 0 8px}
-.sec-lbl:first-child{margin-top:4px}
-
-/* PROJECT CARDS */
-.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative}
-.proj-card:hover{border-color:#b0bfcf;box-shadow:0 2px 10px rgba(0,0,0,.07)}
-.proj-card-top{display:flex;align-items:flex-start;gap:10px}
-.proj-avatar{width:38px;height:38px;border-radius:8px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--navy);flex-shrink:0}
-.proj-card-info{flex:1;min-width:0}
-.proj-card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.proj-card-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.proj-card-meta{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.mpill{font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;background:var(--navy-light);color:var(--navy)}
-.mpill.green{background:var(--sbg);color:var(--success)}
-.proj-del-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;cursor:pointer;padding:5px;border-radius:6px;color:var(--muted);font-size:16px;line-height:1}
-.proj-del-btn:hover{color:var(--danger);background:var(--dbg)}
-.fab{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
-.fab:hover{background:var(--navy-dark)}
-.fab-accent{background:var(--accent)}
-.fab-accent:hover{background:#b07c20}
-.empty-state{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px}
-.empty-state div{font-size:36px;margin-bottom:8px}
-
-/* MODAL */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-end;justify-content:center}
-.modal-backdrop.hidden{display:none}
-.modal{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 16px 36px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto}
-.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--navy)}
-.modal-actions{display:flex;gap:8px;margin-top:16px}
-.btn-mp{flex:1;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
-.btn-mc{flex:1;padding:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
-
-/* DSR HISTORY LIST */
-.dsr-item{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.dsr-item-inner{flex:1;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:var(--rs);cursor:pointer}
-.dsr-item-inner:hover{background:var(--navy-light)}
-.dsr-date{font-size:13px;font-weight:600;color:var(--text)}
-.dsr-sub{font-size:11px;color:var(--muted);margin-top:2px}
-.dsr-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:var(--navy-light);color:var(--navy);white-space:nowrap}
-.dsr-del{background:transparent;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:4px 6px;flex-shrink:0}
-.dsr-del:hover{color:var(--danger)}
-
-/* DSR FORM SCREEN */
-.topbar{background:var(--navy);color:#fff;padding:12px 16px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.18)}
-.topbar-info{flex:1;min-width:0}
-.topbar-info h1{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar-info p{font-size:10px;opacity:.65;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar-date{font-size:11px;font-weight:500;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
-.back-btn{background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;padding:2px 6px 2px 0;line-height:1;flex-shrink:0}
-.prog-bar-wrap{background:var(--navy-dark);padding:8px 16px;display:flex;gap:3px}
-.prog-seg{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.2);transition:background .3s}
-.prog-seg.done{background:var(--accent)}
-.prog-seg.active{background:rgba(255,255,255,.7)}
-.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.nav-tabs::-webkit-scrollbar{display:none}
-.nav-tab{padding:11px 13px;font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;user-select:none}
-.nav-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
-.section{display:none;padding:12px 12px 90px}
-.section.active{display:block}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
-.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;margin-top:10px}
-label:first-of-type{margin-top:0}
-input[type="text"],input[type="email"],input[type="number"],input[type="date"],select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
-input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,58,92,.1)}
-textarea{resize:vertical;min-height:64px;line-height:1.5}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.table-scroll{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
-table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
-table.dt th{background:var(--navy-light);color:var(--navy);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;border:1px solid var(--border);white-space:nowrap;text-align:left}
-table.dt td{padding:4px 5px;border:1px solid var(--border);vertical-align:middle}
-table.dt td input,table.dt td select{border:none;background:transparent;padding:4px 5px;font-size:12px;width:100%;min-width:70px;outline:none}
-table.dt td input:focus,table.dt td select:focus{background:var(--navy-light);border-radius:3px}
-table.dt tr:nth-child(even) td{background:#fafbfc}
-.add-row-btn{margin-top:8px;width:100%;padding:8px;font-size:12px;font-weight:500;border:1.5px dashed var(--border);border-radius:var(--rs);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
-.add-row-btn:hover{background:var(--navy-light);color:var(--navy);border-color:var(--navy)}
-.del-btn{background:transparent;border:none;cursor:pointer;color:#ccc;padding:4px 6px;font-size:16px;line-height:1;transition:color .1s}
-.del-btn:hover{color:var(--danger)}
-.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-.photo-item{display:flex;flex-direction:column;gap:5px}
-.photo-slot{aspect-ratio:4/3;border:1.5px dashed var(--border);border-radius:var(--rs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:#fafbfc;position:relative;overflow:hidden}
-.photo-slot input[type="file"]{display:none}
-.ps-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-top:4px}
-.ps-icon{font-size:22px;color:#c5cdd8}
-.ps-dropdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 10; padding: 5px; width: 80%; }
-.ps-dropdown button { padding: 10px; background: transparent; border: none; border-bottom: 1px solid #eee; font-size: 14px; text-align: center; cursor: pointer; color: #333; }
-.ps-dropdown button:last-child { border-bottom: none; }
-.ps-dropdown button:active { background: #f0f0f0; }
-.ps-default { display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-.photo-caption{font-size:11px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 7px;width:100%}
-.email-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
-.email-tag{display:inline-flex;align-items:center;gap:5px;background:var(--navy-light);border:1px solid #c3d3e8;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--navy)}
-.email-tag button{background:none;border:none;cursor:pointer;color:#8faac5;font-size:14px;padding:0;line-height:1}
-.email-tag button:hover{color:var(--danger)}
-.email-input-row{display:flex;gap:7px}
-.email-input-row input{flex:1}
-.email-add-btn{padding:9px 13px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
-.preview-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
-.preview-row:last-child{border-bottom:none}
-.preview-val{font-weight:600;color:var(--navy)}
-.export-btn{width:100%;padding:13px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;transition:opacity .15s,transform .1s}
-.export-btn:active{transform:scale(.98);opacity:.9}
-.btn-excel{background:#1a6b3c;color:#fff}
-.btn-pdf{background:#991b1b;color:#fff}
-.btn-email{background:var(--navy);color:#fff}
-.btn-save{background:var(--accent);color:#fff}
-.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:8px;z-index:150;max-width:600px;margin:0 auto}
-.btn-prev,.btn-next{flex:1;padding:12px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:none;transition:background .15s}
-.btn-prev{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
-.btn-next{background:var(--navy);color:#fff}
-.btn-next:hover{background:var(--navy-dark)}
-.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1f2e;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:90vw;text-align:center}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.carryover-banner{background:linear-gradient(135deg,#e8eff7,#f0f5fb);border:1px solid #c3d3e8;border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:8px}
-.carryover-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-.carryover-text{font-size:12px;color:var(--navy);line-height:1.5}
-.carryover-text strong{font-weight:700}
-@media(min-width:600px){.app-wrap{max-width:600px;margin:0 auto}.bottom-bar{max-width:600px;left:50%;transform:translateX(-50%)}}
-/* BOTTOM TAB BAR */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-around;
-  padding-bottom: env(safe-area-inset-bottom);
-  z-index: 999;
-}
-.tab-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 0;
-  font-size: 10px;
-  color: var(--muted);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.tab-btn .tab-icon {
-  font-size: 20px;
-  margin-bottom: 3px;
-}
-.tab-btn.active {
-  color: var(--navy);
-  font-weight: 700;
-}
-.tab-btn.active .tab-icon {
-  transform: scale(1.1);
-  transition: transform 0.2s;
-}
-.screen-with-tabs { padding-bottom: 70px !important; }
-
-/* GLOBALS */
-.global-metric {
-  background: var(--navy-light);
-  border-radius: var(--rs);
-  padding: 14px;
-  text-align: center;
-  flex: 1;
-}
-.global-metric h3 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.global-metric .val { font-size: 24px; font-weight: 700; color: var(--navy); margin-top: 4px; }
-.personnel-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 12px;
-  margin-bottom: 8px;
-  position: relative;
-}
-.personnel-card h4 { font-size: 14px; color: var(--text); }
-.personnel-card p { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.personnel-del {
-  position: absolute;
-  top: 8px; right: 8px;
-  background: transparent; border: none; color: var(--muted); font-size: 16px; cursor: pointer;
-}
-.personnel-del:hover { color: var(--danger); }
-</style>
-</head>
-<body>
-<div class="app-wrap">
-
-<!-- ===== MODAL: SETUP ===== -->
-<div class="modal-backdrop hidden" id="modal-setup" style="z-index:900;">
-  <div class="modal">
-    <div class="modal-title">Welcome to DSR</div>
-    <label>Please enter your Company Name to continue:</label>
-    <input type="text" id="setup-company" placeholder="e.g. Acme Corp">
-    <div class="modal-actions">
-      <button class="btn-mp" onclick="saveSetup()">Continue</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: HOME (PROJECTS) ===== -->
-<div class="screen screen-with-tabs" id="screen-home">
-  <div class="home-topbar">
-    <div class="home-topbar-row">
-      <div class="logo-box">DSR</div>
-      <div><h1>Daily Site Reports</h1><p id="home-company-name" onclick="editCompany()" style="cursor:pointer; text-decoration:underline dashed; opacity:0.8;">Company Name</p></div>
-    </div>
-  </div>
-  <div class="home-body">
-    <div class="sec-lbl">Your Projects</div>
-    <div id="proj-list"></div>
-    <button class="fab" style="margin-top:10px" onclick="openNewProjectModal()">+ New Project</button>
-    <div id="quick-dsr-wrap" style="display:none">
-      <div class="sec-lbl">Quick actions</div>
-      <button class="fab fab-accent" onclick="openQuickDSR()">✏️ &nbsp;New DSR for last project</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: DSR FORM ===== -->
-<div class="screen" id="screen-dsr">
-  <div class="topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="Back">&#8592;</button>
-    <div class="topbar-info">
-      <h1 id="dsr-topbar-title">Daily Site Report</h1>
-      <p id="dsr-topbar-sub"></p>
-    </div>
-    <div class="topbar-date" id="today-badge"></div>
-  </div>
-  <div class="prog-bar-wrap" id="prog-bar"></div>
-  <div class="nav-tabs" id="nav-tabs">
-    <div class="nav-tab active" data-i="0">Header</div>
-    <div class="nav-tab" data-i="1">Summary</div>
-    <div class="nav-tab" data-i="2">Manpower</div>
-    <div class="nav-tab" data-i="3">Progress</div>
-    <div class="nav-tab" data-i="4">Materials</div>
-    <div class="nav-tab" data-i="5">Issues</div>
-    <div class="nav-tab" data-i="6">Tomorrow</div>
-    <div class="nav-tab" data-i="7">Photos</div>
-    <div class="nav-tab" data-i="8">Export</div>
-  </div>
-
-  <!-- S0 Header -->
-  <div class="section active" id="s0">
-    <div id="carryover-wrap"></div>
-    <div class="card">
-      <div class="card-title">Project info</div>
-      <label>Project name / ID</label><input type="text" id="proj_name" placeholder="e.g. ALP-RRJ143-VND139-B8-PM-DR-000001">
-      <label>Location / Zone</label><input type="text" id="proj_loc" placeholder="e.g. Palm Jumeirah Frond D">
-      <div class="row2">
-        <div><label>Date</label><input type="date" id="proj_date"></div>
-        <div><label>Shift</label><select id="proj_shift"><option>Day</option><option>Night</option></select></div>
-      </div>
-      <div class="row2">
-        <div><label>Weather</label><select id="weather"><option>Hot</option><option>Clear</option><option>Windy</option><option>Rainy</option><option>Cloudy</option><option>Humid</option><option>Dusty</option></select></div>
-        <div><label>Working hours</label><input type="text" id="hours" placeholder="08:00 - 17:00"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Parties</div>
-      <label>Client</label><input type="text" id="client" placeholder="Client full name">
-      <label>Consultant / Designer</label><input type="text" id="consultant" placeholder="Consultant name">
-      <label>Main Contractor</label><input type="text" id="contractor" placeholder="Main contractor">
-    </div>
-    <div class="card">
-      <div class="card-title">Signatories &amp; distribution</div>
-      <label>Prepared by</label><input type="text" id="prepared_by" placeholder="Name / Job title">
-      <label>Reviewed by</label><input type="text" id="reviewed_by" placeholder="Name / Job title">
-      <label>Distribution</label><input type="text" id="distribution" placeholder="e.g. Operations Manager / Construction Manager">
-      <label>Doc. Ref #</label><input type="text" id="doc_ref" placeholder="To be filled by DC">
-    </div>
-  </div>
-
-  <!-- S1 Summary -->
-  <div class="section" id="s1">
-    <div class="card">
-      <div class="card-title">Executive summary (max 3 bullets)</div>
-      <label>1) Key achieved today</label><textarea id="exec1" placeholder="What was the main achievement today?"></textarea>
-      <label>2) Main blocker / delay</label><textarea id="exec2" placeholder="Describe any blockers or delays"></textarea>
-      <label>3) Critical note / escalation</label><textarea id="exec3" placeholder="Anything requiring escalation?"></textarea>
-    </div>
-  </div>
-
-  <!-- S2 Manpower -->
-  <div class="section" id="s2">
-    <div class="card">
-      <div class="card-title">Manpower</div>
-      <div class="table-scroll">
-        <table class="dt" id="manpower-table">
-          <thead><tr><th>Trade / Company</th><th>Planned</th><th>Actual</th><th>Area / Zone</th><th>OT Hrs</th><th>Notes</th><th></th></tr></thead>
-          <tbody id="manpower-body"></tbody>
-          <tfoot><tr>
-            <td style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
-            <td id="mp-tp" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
-            <td id="mp-ta" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
-            <td colspan="4" style="background:var(--navy-light)"></td>
-          </tr></tfoot>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('manpower')">+ Add trade / company</button>
-    </div>
-    <div class="card">
-      <div class="card-title">Equipment / plant</div>
-      <div class="table-scroll">
-        <table class="dt" id="equipment-table">
-          <thead><tr><th>Equipment</th><th>Qty</th><th>Area / Zone</th><th>Downtime / Issue</th><th></th></tr></thead>
-          <tbody id="equipment-body"></tbody>
-          <tfoot><tr>
-            <td style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">TOTAL</td>
-            <td id="eq-tq" style="font-weight:700;font-size:11px;padding:5px 8px;background:var(--navy-light);color:var(--navy)">0</td>
-            <td colspan="3" style="background:var(--navy-light)"></td>
-          </tr></tfoot>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('equipment')">+ Add equipment</button>
-    </div>
-  </div>
-
-  <!-- S3 Progress -->
-  <div class="section" id="s3">
-    <div class="card">
-      <div class="card-title">Work progress today (measured)</div>
-      <div class="table-scroll">
-        <table class="dt" id="progress-table">
-          <thead><tr><th>Area / Zone</th><th>Activity</th><th>Planned today</th><th>Actual today (Qty/% + Units)</th><th>Remarks / Constraints</th><th></th></tr></thead>
-          <tbody id="progress-body"></tbody>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('progress')">+ Add activity</button>
-    </div>
-  </div>
-
-  <!-- S4 Materials -->
-  <div class="section" id="s4">
-    <div class="card">
-      <div class="card-title">Materials / deliveries</div>
-      <div class="table-scroll">
-        <table class="dt" id="materials-table">
-          <thead><tr><th>Item</th><th>Required for</th><th>Expected date</th><th>Delivered today</th><th>Status</th><th>Impact if delayed</th><th>Owner</th><th></th></tr></thead>
-          <tbody id="materials-body"></tbody>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('materials')">+ Add material / delivery</button>
-    </div>
-  </div>
-
-  <!-- S5 Issues -->
-  <div class="section" id="s5">
-    <div class="card">
-      <div class="card-title">Issues / risks / actions (RAID log)</div>
-      <div class="table-scroll">
-        <table class="dt" id="issues-table">
-          <thead><tr><th>Type</th><th>Description</th><th>Impact (Time/Cost/Quality/HSE)</th><th>Owner</th><th>Due date</th><th>Status</th><th></th></tr></thead>
-          <tbody id="issues-body"></tbody>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('issues')">+ Add issue / risk</button>
-    </div>
-  </div>
-
-  <!-- S6 Tomorrow -->
-  <div class="section" id="s6">
-    <div class="card">
-      <div class="card-title">Plan for tomorrow (clear tasks)</div>
-      <div class="table-scroll">
-        <table class="dt" id="tomorrow-table">
-          <thead><tr><th>Area / Zone</th><th>Activity</th><th>Target qty / output</th><th>Crew / trade</th><th>Notes</th><th></th></tr></thead>
-          <tbody id="tomorrow-body"></tbody>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addRow('tomorrow')">+ Add task</button>
-    </div>
-  </div>
-
-  <!-- S7 Photos -->
-  <div class="section" id="s7">
-    <div class="card">
-      <div class="card-title">Photos / evidence</div>
-      <div class="photo-grid" id="photo-grid"></div>
-      <button class="add-row-btn" onclick="addPhotoSlot()">+ Add photo</button>
-    </div>
-  </div>
-
-  <!-- S8 Export -->
-  <div class="section" id="s8">
-    <div class="card">
-      <div class="card-title">Distribution list</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">DSR is emailed to these addresses on every export.</p>
-      <div class="email-tags" id="email-tags"></div>
-      <div class="email-input-row">
-        <input type="email" id="new-email" placeholder="Enter email address">
-        <button class="email-add-btn" onclick="addEmail()">+ Add</button>
-      </div>
-      <div id="quick-add-personnel" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Report summary</div>
-      <div id="preview-summary"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Export &amp; send</div>
-      <button class="export-btn btn-save" onclick="saveDSR()">💾 &nbsp;Save DSR to project</button>
-      <button class="export-btn btn-excel" onclick="exportExcel()">&#9654; Download as Excel (.xlsx)</button>
-      <button class="export-btn btn-pdf" onclick="exportPDF()">&#9654; Download as PDF</button>
-      <button class="export-btn btn-email" onclick="sendEmail()">&#9654; Send via email to distribution list</button>
-    </div>
-    <div style="height:20px"></div>
-  </div>
-
-  <div class="bottom-bar">
-    <button class="btn-prev" id="prev-btn" onclick="navigate(-1)">&#8592; Prev</button>
-    <button class="btn-next" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
-  </div>
-</div>
-
-<!-- ===== MODAL: New Project ===== -->
-<div class="modal-backdrop hidden" id="modal-new-project">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">New Project</div>
-    <label>Project name *</label><input type="text" id="np-name" placeholder="e.g. Villa Renovation - Palm Jumeirah">
-    <label>Project ID / reference</label><input type="text" id="np-id" placeholder="e.g. ALP-RRJ143-VND139">
-    <label>Client</label><input type="text" id="np-client" placeholder="Client full name">
-    <label>Location / Zone</label><input type="text" id="np-loc" placeholder="e.g. Palm Jumeirah Frond D">
-    <label>Main Contractor</label><input type="text" id="np-contractor" placeholder="Main contractor name">
-    <label>Consultant / Designer</label><input type="text" id="np-consultant" placeholder="Consultant / designer name">
-    <label>Prepared by (default)</label><input type="text" id="np-preparedby" placeholder="e.g. Manjit Singh / Project Engineer">
-    <label>Reviewed by (default)</label><input type="text" id="np-reviewedby" placeholder="e.g. Name / PM">
-    <label>Default working hours</label><input type="text" id="np-hours" placeholder="08:00 - 17:00">
-    <div class="modal-actions">
-      <button class="btn-mc" onclick="closeModal('modal-new-project')">Cancel</button>
-      <button class="btn-mp" onclick="createProject()">Create Project</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL: Project DSR History ===== -->
-<div class="modal-backdrop hidden" id="modal-history">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="history-title">Project Reports</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="fab" style="margin-top:0;flex:1" onclick="startNewDSR()">📝 &nbsp;New DSR</button>
-      <button class="fab fab-accent" style="margin-top:0;flex:1" onclick="openProjectPlan()">📅 &nbsp;Project Plan</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="fab" style="margin-top:0;flex:1;background:var(--navy);font-size:12px" onclick="exportLogsCSV(viewPid)">📥 &nbsp;CSV</button>
-      <button class="fab" style="margin-top:0;flex:1;background:var(--danger);font-size:12px" onclick="exportLogsPDF(viewPid)">📄 &nbsp;PDF</button>
-      <button class="fab" style="margin-top:0;flex:1;background:var(--success);font-size:12px" onclick="openDashboard(viewPid)">📊 &nbsp;Dashboard</button>
-    </div>
-    <div id="dsr-history-list"></div>
-    <div class="modal-actions">
-      <button class="btn-mc" onclick="closeModal('modal-history')">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: DASHBOARD (ANALYTICS) ===== -->
-<div class="screen active screen-with-tabs" id="screen-analytics">
-  <div class="home-topbar">
-    <div class="home-topbar-row">
-      <div class="logo-box">📊</div>
-      <div>
-        <h1>Global Analytics</h1>
-        <p>Across all projects</p>
-      </div>
-    </div>
-  </div>
-  <div class="home-body">
-    <div style="display:flex;gap:10px;margin-bottom:10px">
-      <div class="global-metric">
-        <h3>Active Projects</h3>
-        <div class="val" id="dash-active-proj">0</div>
-      </div>
-      <div class="global-metric">
-        <h3>Efficiency</h3>
-        <div class="val" id="dash-efficiency">0%</div>
-      </div>
-    </div>
-    <div class="card" style="text-align:center;background:var(--navy-light);border:none">
-      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:0.5px">Total Resources</div>
-      <div id="dash-total-res" style="font-size:32px;font-weight:700;color:var(--navy);margin-top:5px">0</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Manpower by Contractor</div>
-      <div style="width:100%;height:300px;position:relative"><canvas id="dash-chart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Total Machinery by Contractor</div>
-      <div style="width:100%;height:300px;position:relative"><canvas id="dash-machinery-chart"></canvas></div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: PROJECT PLAN ===== -->
-<div class="screen" id="screen-plan">
-  <div class="topbar">
-    <button class="back-btn" onclick="goHome()" aria-label="Back">&#8592;</button>
-    <div class="topbar-info">
-      <h1 id="plan-topbar-title">Project Plan</h1>
-      <p id="plan-topbar-sub">Project Management</p>
-    </div>
-  </div>
-  <div class="section active" style="padding-top:12px;display:block">
-    <div class="card">
-      <div class="card-title">Project Tasks</div>
-      <div class="table-scroll">
-        <table class="dt" id="plan-table">
-          <thead><tr><th>Task Name</th><th>Assignee</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Progress (%)</th><th>Notes</th><th></th></tr></thead>
-          <tbody id="plan-body"></tbody>
-        </table>
-      </div>
-      <button class="add-row-btn" onclick="addPlanRow()">+ Add Task</button>
-    </div>
-    <div class="card">
-      <div class="card-title">Import & Export</div>
-      <label class="export-btn btn-excel" style="cursor:pointer;margin-bottom:8px">
-        <span style="display:flex;align-items:center;justify-content:center;width:100%">📥 Import from Excel</span>
-        <input type="file" id="import-plan-file" accept=".xlsx, .xls" style="display:none" onchange="importPlanExcel(event)">
-      </label>
-      <button class="export-btn btn-excel" onclick="exportPlanExcel()">📤 Download as Excel</button>
-      <button class="export-btn btn-save" onclick="saveProjectPlan()">💾 Save Project Plan</button>
-    </div>
-  </div>
-</div>
-
-</div>
-
-  <!-- ===== SCREEN: PERSONNEL ===== -->
-  <div class="screen screen-with-tabs" id="screen-personnel">
-    <div class="home-topbar">
-      <div class="home-topbar-row">
-        <div class="logo-box">👥</div>
-        <div>
-          <h1>Personnel Directory</h1>
-          <p>Manage project team contacts</p>
-        </div>
-      </div>
-    </div>
-    <div class="home-body">
-      <button class="fab" onclick="showModal('modal-personnel')">+ Add Personnel</button>
-      <div id="personnel-list" style="margin-top:16px;"></div>
-    </div>
-  </div>
-
-  <!-- ===== SCREEN: REPORTS ===== -->
-  <div class="screen screen-with-tabs" id="screen-reports">
-    <div class="home-topbar">
-      <div class="home-topbar-row">
-        <div class="logo-box">📋</div>
-        <div>
-          <h1>Global Reports</h1>
-          <p>All reports across all projects</p>
-        </div>
-      </div>
-    </div>
-    <div class="home-body">
-      <div id="global-reports-list"></div>
-    </div>
-  </div>
-
-  <!-- ===== SCREEN: SETTINGS ===== -->
-  <div class="screen screen-with-tabs" id="screen-settings">
-    <div class="home-topbar">
-      <div class="home-topbar-row">
-        <div class="logo-box">⚙️</div>
-        <div>
-          <h1>Settings</h1>
-          <p>App configuration</p>
-        </div>
-      </div>
-    </div>
-    <div class="home-body">
-      <div class="empty-state">
-        <div>⚙️</div>
-        Settings configuration coming soon.
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== BOTTOM NAV ===== -->
-  <nav class="bottom-nav" id="main-bottom-nav">
-    <div class="tab-btn active" onclick="switchMainTab('analytics')" id="tab-btn-analytics">
-      <div class="tab-icon">📊</div>
-      <div>Analytics</div>
-    </div>
-    <div class="tab-btn" onclick="switchMainTab('home')" id="tab-btn-home">
-      <div class="tab-icon">🏗️</div>
-      <div>Project</div>
-    </div>
-    <div class="tab-btn" onclick="switchMainTab('personnel')" id="tab-btn-personnel">
-      <div class="tab-icon">👥</div>
-      <div>Personnel</div>
-    </div>
-    <div class="tab-btn" onclick="switchMainTab('reports')" id="tab-btn-reports">
-      <div class="tab-icon">📋</div>
-      <div>Report</div>
-    </div>
-    <div class="tab-btn" onclick="switchMainTab('settings')" id="tab-btn-settings">
-      <div class="tab-icon">⚙️</div>
-      <div>Setting</div>
-    </div>
-  </nav>
-
-</div><!-- /app-wrap -->
-
-<!-- MODAL: PERSONNEL -->
-<div class="modal-backdrop hidden" id="modal-personnel">
-  <div class="modal" style="margin:auto">
-    <div class="modal-handle"></div>
-    <h2 class="modal-title">Add Personnel</h2>
-    <div style="margin-bottom:12px">
-      <label>Name</label>
-      <input type="text" id="per-name" placeholder="e.g. John Doe">
-    </div>
-    <div style="margin-bottom:12px">
-      <label>Role</label>
-      <select id="per-role">
-        <option value="Project Manager">Project Manager</option>
-        <option value="Project Engineer">Project Engineer</option>
-        <option value="Operation Manager">Operation Manager</option>
-        <option value="Site Engineer">Site Engineer</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-    <div style="margin-bottom:12px">
-      <label>Email</label>
-      <input type="email" id="per-email" placeholder="john@example.com">
-    </div>
-    <label>Contact No.</label>
-      <input type="text" id="per-phone" placeholder="+971 50 123 4567">
-    </div>
-    <button class="fab" onclick="savePersonnel()">Save Personnel</button>
-  </div>
-</div>
-<div class="toast" id="toast"></div>
-
-<script>
 // ─── STORAGE ───────────────────────────────────────────────
 const LSP='alpago_projects', LSR='alpago_reports', LPE='alpago_personnel';
 function lp(){try{return JSON.parse(localStorage.getItem(LSP)||'[]')}catch{return[]}}
@@ -693,6 +23,84 @@ const SECS=['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
 let cur=0,emails=[],photoData={},activePid=null,viewPid=null;
 let currentTab = 'analytics';
 
+function initDummyData() {
+  const projects = lp();
+  if(projects.length > 0) return; // Only run if empty
+
+  // 1. Create 5 Personnel
+  const dummyPersonnel = [
+    { name: "John Doe", role: "Project Manager", email: "john.doe@buildcorp.com", phone: "123-456-7890" },
+    { name: "Jane Smith", role: "Site Engineer", email: "jane.smith@astra.com", phone: "123-456-7891" },
+    { name: "Mike Johnson", role: "HSE Officer", email: "mike.j@pillar.com", phone: "123-456-7892" },
+    { name: "Emily Brown", role: "QA/QC", email: "emily.b@summit.com", phone: "123-456-7893" },
+    { name: "Chris Wilson", role: "Foreman", email: "chris.w@delta.com", phone: "123-456-7894" }
+  ];
+  spe(dummyPersonnel);
+
+  // 2. Create 1 Project
+  const dummyProject = {
+    id: 'proj_dummy_1',
+    name: "City Center Highrise",
+    refId: "PRJ-2026-001",
+    client: "Global Estates",
+    loc: "Downtown Core",
+    contractor: "BuildCorp",
+    consultant: "Astra Projects",
+    preparedBy: "Jane Smith",
+    reviewedBy: "John Doe",
+    hours: "08:00 - 17:00",
+    emails: ["john.doe@buildcorp.com"],
+    createdAt: new Date().toISOString()
+  };
+  sp([dummyProject]);
+
+  // 3. Create 5-6 Daily Reports
+  const companies = ["BuildCorp", "Astra Projects", "Pillar Construct", "Summit Infra", "Delta Builders"];
+  const machineries = ["Excavator", "Tower Crane", "Dump Truck", "Bulldozer", "Concrete Mixer"];
+  
+  const allReports = {};
+  allReports[dummyProject.id] = [];
+
+  for(let i=5; i>=0; i--) {
+    let d = new Date();
+    d.setDate(d.getDate() - i);
+    let dateStr = d.toISOString().split('T')[0];
+    
+    // Generate random manpower and equipment for this day
+    let manpowerData = [];
+    let equipmentData = [];
+    
+    companies.forEach(comp => {
+      let planned = Math.floor(Math.random() * 50) + 10;
+      let actual = Math.floor(planned * (0.8 + Math.random() * 0.3)); // 80% to 110% of planned
+      manpowerData.push([comp, planned, actual, "All Zones", "0", "Normal Ops"]);
+    });
+
+    machineries.forEach(mach => {
+      let qty = Math.floor(Math.random() * 5) + 1;
+      equipmentData.push([mach, qty, "Zone A", "None"]);
+    });
+
+    let report = {
+      date: dateStr,
+      savedAt: new Date().toISOString(),
+      data: {
+        header: {
+          proj_name: dummyProject.name,
+          proj_loc: dummyProject.loc,
+          proj_date: dateStr,
+          proj_shift: "Day"
+        },
+        manpower: manpowerData,
+        equipment: equipmentData
+      }
+    };
+    allReports[dummyProject.id].push(report);
+  }
+  
+  sr(allReports);
+}
+
 // ─── INIT ──────────────────────────────────────────────────
 (function(){
   document.getElementById('today-badge').textContent=fmtDate(today());
@@ -701,6 +109,7 @@ let currentTab = 'analytics';
   document.getElementById('np-name').addEventListener('keydown',e=>{if(e.key==='Enter')createProject()});
   document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden')}));
   switchMainTab('analytics');
+  initDummyData();
   checkSetup();
 })();
 
@@ -1446,7 +855,6 @@ function exportLogsPDF(pid){
 }
 
 let dashChartObj = null;
-let dashMachineryChartObj = null;
 
 function renderGlobalDashboard(){
   const projects = lp();
@@ -1524,58 +932,4 @@ function renderGlobalDashboard(){
       }
     }
   });
-
-  // Render Machinery Chart
-  const ctxMachinery = document.getElementById('dash-machinery-chart');
-  if(!ctxMachinery) return;
-  
-  if(dashMachineryChartObj) {
-    dashMachineryChartObj.destroy();
-  }
-
-  let equipmentData = {}; // { 'Contractor/Equipment Name': actualCount }
-  projects.forEach(p => {
-    const rpts = allReports[p.id] || [];
-    rpts.forEach(r => {
-      (r.data.equipment||[]).forEach(row => {
-        let actual = Number(row[1]) || 0;
-        let equipmentName = row[0] ? String(row[0]).trim() : 'Unknown';
-        if(equipmentName === '') equipmentName = 'Unknown';
-        
-        if(!equipmentData[equipmentName]) equipmentData[equipmentName] = 0;
-        equipmentData[equipmentName] += actual;
-      });
-    });
-  });
-
-  const mLabels = Object.keys(equipmentData);
-  const mData = Object.values(equipmentData);
-  const mBgColors = mLabels.map((l,i) => `hsl(${((i+5)*137.5)%360}, 70%, 50%)`);
-
-  dashMachineryChartObj = new Chart(ctxMachinery, {
-    type: 'bar',
-    data: {
-      labels: mLabels.length ? mLabels : ['No Data'],
-      datasets: [{
-        label: 'Total Machinery',
-        data: mData.length ? mData : [0],
-        backgroundColor: mBgColors,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
-        x: { grid: { display: false } }
-      }
-    }
-  });
 }
-</script>
-</body>
-</html>
