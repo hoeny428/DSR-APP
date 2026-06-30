@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dsr-cache-v8';
+const CACHE_NAME = 'dsr-cache-v9';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -12,6 +12,7 @@ const urlsToCache = [
 
 // Install event: cache all necessary files
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -37,6 +38,7 @@ self.addEventListener('fetch', event => {
 
 // Activate event: clean up old caches if the cache name changes
 self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim());
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
